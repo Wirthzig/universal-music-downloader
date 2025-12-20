@@ -8,57 +8,77 @@ const __filename$1 = fileURLToPath(import.meta.url);
 const __dirname$1 = path.dirname(__filename$1);
 const APP_SUPPORT = app.getPath("userData");
 const YT_DLP_PATH = path.join(APP_SUPPORT, "yt-dlp");
+const FFMPEG_PATH = path.join(APP_SUPPORT, "ffmpeg");
 const YT_DLP_URL = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos";
-const downloadYtDlp = () => {
+const FFMPEG_URL = "https://evermeet.cx/ffmpeg/getrelease/zip";
+const downloadFile = (url, dest) => {
   return new Promise((resolve, reject) => {
-    console.log(`[Main] Checking yt-dlp at: ${YT_DLP_PATH}`);
-    if (fs.existsSync(YT_DLP_PATH)) {
-      try {
-        const stats = fs.statSync(YT_DLP_PATH);
-        console.log(`[Main] Binary exists. Size: ${stats.size}, Mode: ${stats.mode.toString(8)}`);
-        const MIN_SIZE = 30 * 1024 * 1024;
-        if (stats.size > MIN_SIZE) {
-          fs.chmodSync(YT_DLP_PATH, "755");
-          execFile("xattr", ["-d", "com.apple.quarantine", YT_DLP_PATH], (err) => {
-            resolve();
-          });
+    const handleResponse = (response) => {
+      if (response.statusCode === 302 || response.statusCode === 301) {
+        if (response.headers.location) {
+          const nextUrl = new URL(response.headers.location, url).href;
+          console.log(`[Main] Redirecting to: ${nextUrl}`);
+          https.get(nextUrl, handleResponse).on("error", reject);
           return;
-        } else {
-          console.log("[Main] Binary is too small (possible corruption). Deleting...");
-          fs.unlinkSync(YT_DLP_PATH);
         }
-      } catch (e) {
-        console.error("[Main] Error checking binary:", e);
       }
-    }
-    console.log("[Main] Downloading yt-dlp...");
-    const downloadFile = (url) => {
-      https.get(url, (response) => {
-        if (response.statusCode === 302 || response.statusCode === 301) {
-          if (response.headers.location) {
-            downloadFile(response.headers.location);
-            return;
-          }
-        }
-        if (response.statusCode !== 200) {
-          reject(new Error(`Failed to download: Status Code ${response.statusCode}`));
-          return;
-        }
-        const file = fs.createWriteStream(YT_DLP_PATH);
-        response.pipe(file);
-        file.on("finish", () => {
-          file.close();
-          fs.chmodSync(YT_DLP_PATH, "755");
-          resolve();
-        });
-      }).on("error", (err) => {
-        fs.unlink(YT_DLP_PATH, () => {
-        });
-        reject(err);
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to download: Status Code ${response.statusCode}`));
+        return;
+      }
+      const file = fs.createWriteStream(dest);
+      response.pipe(file);
+      file.on("finish", () => {
+        file.close();
+        resolve();
       });
     };
-    downloadFile(YT_DLP_URL);
+    https.get(url, handleResponse).on("error", (err) => {
+      fs.unlink(dest, () => {
+      });
+      reject(err);
+    });
   });
+};
+const setupYtDlp = async () => {
+  console.log(`[Main] Checking yt-dlp at: ${YT_DLP_PATH}`);
+  if (fs.existsSync(YT_DLP_PATH)) {
+    const stats = fs.statSync(YT_DLP_PATH);
+    if (stats.size > 30 * 1024 * 1024) {
+      fs.chmodSync(YT_DLP_PATH, "755");
+      await new Promise((res) => execFile("xattr", ["-d", "com.apple.quarantine", YT_DLP_PATH], () => res()));
+      return;
+    }
+    fs.unlinkSync(YT_DLP_PATH);
+  }
+  console.log("[Main] Downloading yt-dlp...");
+  await downloadFile(YT_DLP_URL, YT_DLP_PATH);
+  fs.chmodSync(YT_DLP_PATH, "755");
+};
+const setupFFmpeg = async () => {
+  console.log(`[Main] Checking ffmpeg at: ${FFMPEG_PATH}`);
+  if (fs.existsSync(FFMPEG_PATH)) {
+    const stats = fs.statSync(FFMPEG_PATH);
+    if (stats.size > 10 * 1024 * 1024) {
+      fs.chmodSync(FFMPEG_PATH, "755");
+      await new Promise((res) => execFile("xattr", ["-d", "com.apple.quarantine", FFMPEG_PATH], () => res()));
+      return;
+    }
+    fs.unlinkSync(FFMPEG_PATH);
+  }
+  console.log("[Main] Downloading ffmpeg...");
+  const zipPath = path.join(APP_SUPPORT, "ffmpeg.zip");
+  await downloadFile(FFMPEG_URL, zipPath);
+  console.log("[Main] Unzipping ffmpeg...");
+  await new Promise((resolve, reject) => {
+    const child = spawn("unzip", ["-o", zipPath, "-d", APP_SUPPORT]);
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error("Unzip failed"));
+    });
+  });
+  if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+  fs.chmodSync(FFMPEG_PATH, "755");
 };
 let initPromise = null;
 function createWindow() {
@@ -85,7 +105,7 @@ function createWindow() {
 app.whenReady().then(async () => {
   console.log(`[Main] App Ready. Node: ${process.version}, Arch: ${process.arch}, Platform: ${process.platform}`);
   createWindow();
-  initPromise = downloadYtDlp().catch((err) => console.error("[Main] Dep Failure:", err));
+  initPromise = Promise.all([setupYtDlp(), setupFFmpeg()]).then(() => console.log("[Main] All dependencies ready.")).catch((err) => console.error("[Main] Dep Failure:", err));
   ipcMain.handle("init-dependencies", async () => {
     if (initPromise) await initPromise;
     return { success: true };
@@ -224,11 +244,15 @@ app.whenReady().then(async () => {
     });
   });
   ipcMain.handle("download-song", async (event, { url, folder, artist, title }) => {
+    if (initPromise) await initPromise;
     return new Promise((resolve) => {
       const outputTemplate = path.join(folder, `${artist} - ${title}.%(ext)s`);
       const safeTitle = title.replace(/"/g, "");
       const safeArtist = artist.replace(/"/g, "");
       const args = [
+        "--ffmpeg-location",
+        FFMPEG_PATH,
+        // <--- CRITICAL: Use the bundled binary
         "-x",
         "--audio-format",
         "m4a",
@@ -236,7 +260,6 @@ app.whenReady().then(async () => {
         "--no-warnings",
         "-o",
         outputTemplate,
-        // FORCE metadata overwrite using ffmpeg arguments
         "--postprocessor-args",
         `ffmpeg:-metadata title="${safeTitle}" -metadata artist="${safeArtist}" -metadata album="${safeTitle}" -metadata album_artist="${safeArtist}"`,
         url

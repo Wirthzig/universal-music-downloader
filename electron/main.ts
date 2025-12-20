@@ -11,60 +11,91 @@ const __dirname = path.dirname(__filename);
 // --- Dependency Manager ---
 const APP_SUPPORT = app.getPath('userData');
 const YT_DLP_PATH = path.join(APP_SUPPORT, 'yt-dlp');
+const FFMPEG_PATH = path.join(APP_SUPPORT, 'ffmpeg');
+
+// URLs
 const YT_DLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos';
+// Static FFmpeg build for macOS (Universal or 64-bit)
+const FFMPEG_URL = 'https://evermeet.cx/ffmpeg/getrelease/zip';
 
-const downloadYtDlp = () => {
+const downloadFile = (url: string, dest: string) => {
     return new Promise<void>((resolve, reject) => {
-        console.log(`[Main] Checking yt-dlp at: ${YT_DLP_PATH}`);
-
-        if (fs.existsSync(YT_DLP_PATH)) {
-            try {
-                const stats = fs.statSync(YT_DLP_PATH);
-                console.log(`[Main] Binary exists. Size: ${stats.size}, Mode: ${stats.mode.toString(8)}`);
-
-                const MIN_SIZE = 30 * 1024 * 1024;
-                if (stats.size > MIN_SIZE) {
-                    fs.chmodSync(YT_DLP_PATH, '755');
-                    execFile('xattr', ['-d', 'com.apple.quarantine', YT_DLP_PATH], (err) => {
-                        resolve();
-                    });
+        const handleResponse = (response: any) => {
+            if (response.statusCode === 302 || response.statusCode === 301) {
+                if (response.headers.location) {
+                    // Fix: Resolve relative URLs against the current URL logic
+                    const nextUrl = new URL(response.headers.location, url).href;
+                    console.log(`[Main] Redirecting to: ${nextUrl}`);
+                    https.get(nextUrl, handleResponse).on('error', reject);
                     return;
-                } else {
-                    console.log('[Main] Binary is too small (possible corruption). Deleting...');
-                    fs.unlinkSync(YT_DLP_PATH);
                 }
-            } catch (e) {
-                console.error('[Main] Error checking binary:', e);
             }
-        }
-
-        console.log('[Main] Downloading yt-dlp...');
-        const downloadFile = (url: string) => {
-            https.get(url, (response) => {
-                if (response.statusCode === 302 || response.statusCode === 301) {
-                    if (response.headers.location) {
-                        downloadFile(response.headers.location);
-                        return;
-                    }
-                }
-                if (response.statusCode !== 200) {
-                    reject(new Error(`Failed to download: Status Code ${response.statusCode}`));
-                    return;
-                }
-                const file = fs.createWriteStream(YT_DLP_PATH);
-                response.pipe(file);
-                file.on('finish', () => {
-                    file.close();
-                    fs.chmodSync(YT_DLP_PATH, '755');
-                    resolve();
-                });
-            }).on('error', (err) => {
-                fs.unlink(YT_DLP_PATH, () => { });
-                reject(err);
+            if (response.statusCode !== 200) {
+                reject(new Error(`Failed to download: Status Code ${response.statusCode}`));
+                return;
+            }
+            const file = fs.createWriteStream(dest);
+            response.pipe(file);
+            file.on('finish', () => {
+                file.close();
+                resolve();
             });
         };
-        downloadFile(YT_DLP_URL);
+        https.get(url, handleResponse).on('error', (err) => {
+            fs.unlink(dest, () => { });
+            reject(err);
+        });
     });
+};
+
+const setupYtDlp = async () => {
+    console.log(`[Main] Checking yt-dlp at: ${YT_DLP_PATH}`);
+    if (fs.existsSync(YT_DLP_PATH)) {
+        const stats = fs.statSync(YT_DLP_PATH);
+        if (stats.size > 30 * 1024 * 1024) {
+            fs.chmodSync(YT_DLP_PATH, '755');
+            // Remove quarantine
+            await new Promise<void>(res => execFile('xattr', ['-d', 'com.apple.quarantine', YT_DLP_PATH], () => res()));
+            return;
+        }
+        fs.unlinkSync(YT_DLP_PATH);
+    }
+
+    console.log('[Main] Downloading yt-dlp...');
+    await downloadFile(YT_DLP_URL, YT_DLP_PATH);
+    fs.chmodSync(YT_DLP_PATH, '755');
+};
+
+const setupFFmpeg = async () => {
+    console.log(`[Main] Checking ffmpeg at: ${FFMPEG_PATH}`);
+    if (fs.existsSync(FFMPEG_PATH)) {
+        // Simple check
+        const stats = fs.statSync(FFMPEG_PATH);
+        if (stats.size > 10 * 1024 * 1024) {
+            fs.chmodSync(FFMPEG_PATH, '755');
+            // Remove quarantine
+            await new Promise<void>(res => execFile('xattr', ['-d', 'com.apple.quarantine', FFMPEG_PATH], () => res()));
+            return;
+        }
+        fs.unlinkSync(FFMPEG_PATH);
+    }
+
+    console.log('[Main] Downloading ffmpeg...');
+    const zipPath = path.join(APP_SUPPORT, 'ffmpeg.zip');
+    await downloadFile(FFMPEG_URL, zipPath);
+
+    console.log('[Main] Unzipping ffmpeg...');
+    // Use system unzip
+    await new Promise<void>((resolve, reject) => {
+        const child = spawn('unzip', ['-o', zipPath, '-d', APP_SUPPORT]);
+        child.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error('Unzip failed'));
+        });
+    });
+
+    if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+    fs.chmodSync(FFMPEG_PATH, '755');
 };
 
 let initPromise: Promise<void> | null = null;
@@ -96,7 +127,10 @@ app.whenReady().then(async () => {
     console.log(`[Main] App Ready. Node: ${process.version}, Arch: ${process.arch}, Platform: ${process.platform}`);
     createWindow();
 
-    initPromise = downloadYtDlp().catch(err => console.error('[Main] Dep Failure:', err));
+    // Parallel init
+    initPromise = Promise.all([setupYtDlp(), setupFFmpeg()])
+        .then(() => console.log('[Main] All dependencies ready.'))
+        .catch(err => console.error('[Main] Dep Failure:', err));
 
     ipcMain.handle('init-dependencies', async () => {
         if (initPromise) await initPromise;
@@ -114,19 +148,13 @@ app.whenReady().then(async () => {
         console.log(`[Main] Fetching metadata for: ${url}`);
 
         return new Promise((resolve) => {
-            // --flat-playlist ensures we get fast listing for playlists
-            // --dump-single-json gives us one big JSON object
             const args = ['--dump-single-json', '--no-warnings'];
 
-            // SoundCloud requires deep scanning to resolve 'url_transparent' entries to get titles
-            // YouTube works fine with flat-playlist (and is much faster)
             if (!url.includes('soundcloud.com')) {
                 args.push('--flat-playlist');
             }
-
             args.push(url);
 
-            // Increase buffer size for large playlists
             const child = spawn(YT_DLP_PATH, args);
 
             let stdout = '';
@@ -144,18 +172,12 @@ app.whenReady().then(async () => {
 
                 try {
                     const data = JSON.parse(stdout);
-                    // Standardize output
-                    // If it's a playlist, 'entries' will be present.
-                    // If it's a single track, it might be the object itself, or 'entries' might be undefined.
-
                     let entries = [];
                     if (data.entries) {
                         entries = data.entries;
                     } else if (data._type === 'playlist') {
-                        // Empty playlist?
                         entries = [];
                     } else {
-                        // Single item
                         entries = [data];
                     }
 
@@ -164,24 +186,18 @@ app.whenReady().then(async () => {
                     }
 
                     const tracks = entries.map((entry: any) => {
-                        // ROBUST PARSING
                         if (!entry) return null;
 
                         let title = entry.title || entry.fulltitle || entry.track || entry.alt_title;
                         let artist = entry.uploader || entry.artist || entry.creator || entry.channel || entry.uploader_id;
                         const url = entry.url || entry.webpage_url || entry.original_url || url;
 
-                        // Fallback: Parse URL for SoundCloud if metadata is missing
                         if ((!title || !artist) && url.includes('soundcloud.com')) {
                             try {
-                                // url: https://soundcloud.com/user/title-slug
                                 const parts = url.split('/').filter((p: string) => p.length > 0);
-                                // usually [protocol, domain, user, title] -> we want last 2
                                 if (parts.length >= 2) {
                                     const slugTitle = parts[parts.length - 1];
                                     const slugArtist = parts[parts.length - 2];
-
-                                    // Simple cleanup: replace dashes with spaces, capitalize
                                     const clean = (s: string) => s.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
                                     if (!title) title = clean(slugTitle);
@@ -216,7 +232,6 @@ app.whenReady().then(async () => {
     ipcMain.handle('search-youtube', async (_, payload) => {
         if (initPromise) await initPromise;
 
-        // Handle both simple string (legacy) and object payload
         let queryStr = '';
         let targetArtist = '';
         let targetTitle = '';
@@ -232,7 +247,6 @@ app.whenReady().then(async () => {
         console.log(`[Main] Searching for: "${queryStr}" (Artist: ${targetArtist})`);
 
         return new Promise((resolve) => {
-            // 1. Fetch Top 5 Results
             const args = ['--print-json', '--flat-playlist', '--no-warnings', `ytsearch5:${queryStr}`];
             const child = spawn(YT_DLP_PATH, args);
 
@@ -249,18 +263,12 @@ app.whenReady().then(async () => {
 
                     if (results.length === 0) { resolve(null); return; }
 
-                    // --- STRICT FILTERING ---
-                    // Helper to clean strings for comparison
                     const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const cleanArtist = clean(targetArtist);
 
-                    // 1. Find "Topic" channel that MATCHES artist name
                     const topicMatch = results.find((r: any) => {
                         const uploader = clean(r.uploader || '');
                         const isTopic = (r.uploader || '').includes(' - Topic');
-
-                        // Uploader must include artist name (e.g. "Eminem - Topic" includes "eminem")
-                        // AND it must be a Topic channel
                         return isTopic && uploader.includes(cleanArtist);
                     });
 
@@ -270,10 +278,8 @@ app.whenReady().then(async () => {
                         return;
                     }
 
-                    // 2. Find any result where Uploader MATCHES artist name (Official Channel)
                     const officialMatch = results.find((r: any) => {
                         const uploader = clean(r.uploader || '');
-                        // Strict check: Uploader must strictly contain artist name
                         return uploader.includes(cleanArtist);
                     });
 
@@ -283,7 +289,6 @@ app.whenReady().then(async () => {
                         return;
                     }
 
-                    // 3. Fallback: Just take the first result but warn
                     console.log(`[Main] No verified match. Defaulting to: ${results[0].title}`);
                     resolve(results[0].url || `https://youtube.com/watch?v=${results[0].id}`);
 
@@ -296,23 +301,24 @@ app.whenReady().then(async () => {
     });
 
     ipcMain.handle('download-song', async (event, { url, folder, artist, title }) => {
+        // Ensure dependencies are ready before starting download
+        if (initPromise) await initPromise;
+
         return new Promise((resolve) => {
             const outputTemplate = path.join(folder, `${artist} - ${title}.%(ext)s`);
-
-            // Sanitize for metadata arguments
             const safeTitle = title.replace(/"/g, '');
             const safeArtist = artist.replace(/"/g, '');
 
             const args = [
+                '--ffmpeg-location', FFMPEG_PATH, // <--- CRITICAL: Use the bundled binary
                 '-x', '--audio-format', 'm4a', '--embed-metadata', '--no-warnings',
                 '-o', outputTemplate,
-                // FORCE metadata overwrite using ffmpeg arguments
                 '--postprocessor-args', `ffmpeg:-metadata title="${safeTitle}" -metadata artist="${safeArtist}" -metadata album="${safeTitle}" -metadata album_artist="${safeArtist}"`,
                 url
             ];
 
             const child = spawn(YT_DLP_PATH, args);
-            child.stdout.on('data', (d) => process.stdout.write(d)); // pipe progress
+            child.stdout.on('data', (d) => process.stdout.write(d));
 
             child.on('close', (code) => {
                 if (code === 0) resolve({ success: true });
