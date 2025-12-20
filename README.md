@@ -18,6 +18,42 @@
 
 ---
 
+## ⚡️ Quick Start (Developer Setup)
+
+Prerequisites: **Node.js v20+**, **npm v10+**, **macOS** (for .dmg builds).
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Wirthzig/universal-music-downloader.git
+cd universal-music-downloader
+
+# 2. Install dependencies
+# This installs Electron binaries and React libraries
+npm install
+
+# 3. Run in Development Mode
+# Starts Vite Server (Port 5173) + Electron Main Process
+npm run dev
+
+# 4. Build for Production
+# Compiles TS -> JS, Bundles Assets, and signs the .dmg
+npm run build
+```
+
+**Project Structure:**
+```bash
+├── electron/        # 🟢 Node.js Main Process (Backend)
+│   ├── main.ts      #    - Native APIs, File System, Child Processes
+│   └── preload.ts   #    - Context Bridge (Security Layer)
+├── src/             # 🔵 React Renderer Process (Frontend)
+│   ├── components/  #    - UI Components (SpotifyView, SplitScreen)
+│   └── assets/      #    - Images and Fonts
+├── dist_app/        # 📦 Build Artifacts (DMG, App Bundle)
+└── package.json     # ⚙️ Config & Scripts
+```
+
+---
+
 # 📚 Engineering Manual & Course
 
 This document is not just a README; it is a comprehensive breakdown of the systems engineering required to build a production-grade desktop application. It covers Inter-Process Communication (IPC), binary lifecycle management, complex state synchronization, and digital signal processing considerations.
