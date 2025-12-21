@@ -28,8 +28,8 @@ version-resolver:
       - 'fix'
   default: patch
 template: |
-  ![Release Banner](https://via.placeholder.com/1200x400.png?text=Universal+Music+Downloader+v$RESOLVED_VERSION+Mockup)
-  
+  <img width="1364" height="685" alt="release-banner" src="https://github.com/user-attachments/assets/a991fcf3-fbe5-4d1d-a84b-4b0710d9c2c7" />
+
   # Universal Music Downloader v$RESOLVED_VERSION 🎵
 
   [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple)](https://github.com/Wirthzig/universal-music-downloader/releases)
@@ -93,6 +93,10 @@ template: |
   4.  Click **Open** in the dialog box.
   *(You only have to do this once).*
 
+  **Alternative Power User Fix (Terminal):**
+  ```bash
+  sudo xattr -cr /Applications/"Universal Music Downloader.app"
+  ```
 
   ## ⚠️ Legal Disclaimer
   *Educational Purpose Only. Do not infringe copyright.*
