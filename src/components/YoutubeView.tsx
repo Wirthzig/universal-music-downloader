@@ -127,50 +127,51 @@ export function YoutubeView({ onBack }: Props) {
             <div className="fixed top-0 left-0 w-full h-12 z-50 draggable-header hover:bg-black/5 transition-colors" />
 
             {/* Back Button */}
-            <button onClick={onBack} className="absolute top-14 left-8 p-3 rounded-full border-2 border-white hover:bg-white hover:text-[#ff0000] text-white transition-colors z-50 group">
-                <ChevronLeft size={24} />
-                <span className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white text-[#ff0000] px-3 py-1 rounded font-bold text-xs whitespace-nowrap pointer-events-none">BACK</span>
+            <button onClick={onBack} className="absolute top-14 left-8 p-3 rounded-full bg-white text-[#ff0000] shadow-xl hover:scale-105 transition-transform z-50 group">
+                <ChevronLeft size={24} className="stroke-[3]" />
+                <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-white text-[#ff0000] px-3 py-1 rounded-full font-black text-xs whitespace-nowrap pointer-events-none shadow-lg">BACK</span>
             </button>
 
             {/* Header */}
             <div className="mb-8 mt-4 relative z-10 flex flex-col items-center">
-                <img src={Logo} alt="YouTube" className="h-24 object-contain drop-shadow-xl" />
-                <h1 className="text-4xl font-black mt-4 text-white uppercase tracking-tighter shadow-sm">YouTube</h1>
-                <p className="text-sm text-white/80 font-bold mt-1 uppercase tracking-widest border-b-2 border-white/20 pb-1">{statusMsg}</p>
+                <img src={Logo} alt="YouTube" className="h-24 object-contain drop-shadow-2xl" />
+                <h1 className="text-4xl font-black mt-4 text-white uppercase tracking-tighter drop-shadow-md">YouTube</h1>
+                <p className="text-sm text-white/80 font-bold mt-1 uppercase tracking-widest">{statusMsg}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
                 {/* Sidebar (Input) */}
-                <div className="col-span-1 space-y-4">
-                    <div className="bg-white p-6 rounded-3xl shadow-xl">
-                        <h2 className="text-xs font-black text-black uppercase mb-4 tracking-widest">Video URL</h2>
+                <div className="col-span-1 space-y-6">
+                    {/* MONOCHROME CONTAINER: Red BG, Deep Shadow */}
+                    <div className="bg-[#ff0000] text-white p-6 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 relative overflow-hidden">
+                        <h2 className="text-xs font-black text-white uppercase mb-4 tracking-widest relative z-10">Video URL</h2>
                         <input
-                            className="w-full bg-gray-100 border-2 border-black/10 rounded-xl p-3 mb-4 text-sm font-bold focus:bg-white focus:border-black outline-none transition-all placeholder-gray-400 text-black"
+                            className="w-full bg-black/20 border-2 border-transparent focus:border-white/40 rounded-xl p-3 mb-4 text-sm font-bold focus:bg-black/40 outline-none transition-all placeholder-white/40 text-white relative z-10 shadow-inner"
                             placeholder="Paste Link..."
                             value={url} onChange={e => setUrl(e.target.value)}
                         />
                         <button
                             onClick={scanUrl}
-                            className="w-full bg-black hover:bg-gray-800 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-lg text-lg uppercase tracking-wider"
+                            className="relative z-10 w-full bg-white text-[#ff0000] hover:bg-gray-100 font-black py-4 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-lg active:scale-95 uppercase tracking-wider"
                         >
                             <Search size={20} className="stroke-[3]" />
                             <span>SCAN</span>
                         </button>
                     </div>
 
-                    <div className="bg-white p-6 rounded-3xl shadow-xl">
-                        <button onClick={selectFolder} className="w-full mb-4 bg-gray-100 hover:bg-gray-200 border-2 border-transparent hover:border-black py-3 rounded-xl flex items-center justify-center text-sm transition-colors font-bold text-black uppercase tracking-wide">
+                    <div className="bg-[#ff0000] p-6 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10">
+                        <button onClick={selectFolder} className="w-full mb-4 bg-black/20 hover:bg-black/30 border-2 border-transparent py-3 rounded-xl flex items-center justify-center text-sm transition-colors text-sm font-bold text-white uppercase tracking-wide">
                             <FolderOpen size={18} className="mr-2 stroke-[2.5]" />
-                            {targetFolder ? 'Folder Selected' : 'Choose Output Folder'}
+                            {targetFolder ? 'Folder Selected' : 'Choose Folder'}
                         </button>
 
                         <div className="flex gap-2">
                             {!isProcessing ? (
-                                <button onClick={startProcess} className="flex-1 bg-black text-white hover:bg-gray-800 py-4 rounded-xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center shadow-lg transform active:scale-95">
+                                <button onClick={startProcess} className="flex-1 bg-white text-black hover:bg-gray-100 py-4 rounded-xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center shadow-lg transform active:scale-95">
                                     <DownloadCloud size={22} className="mr-2 stroke-[3]" /> Download
                                 </button>
                             ) : (
-                                <button onClick={() => abortRef.current = true} className="flex-1 bg-red-600 text-white border-2 border-red-600 py-4 rounded-xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center shadow-lg animate-pulse">
+                                <button onClick={() => abortRef.current = true} className="flex-1 bg-white text-[#ff0000] border-2 border-white py-4 rounded-xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center shadow-lg animate-pulse">
                                     <Square size={22} className="mr-2 fill-current" /> Stop
                                 </button>
                             )}
@@ -179,35 +180,35 @@ export function YoutubeView({ onBack }: Props) {
                 </div>
 
                 {/* List Container */}
-                <div className="col-span-1 md:col-span-2 bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col h-[600px]">
-                    <div className="p-6 bg-gray-50 flex flex-col gap-4">
+                <div className="col-span-1 md:col-span-2 bg-[#ff0000] rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 overflow-hidden flex flex-col h-[600px] relative">
+                    <div className="p-6 bg-black/10 border-b border-white/5 flex flex-col gap-4">
                         <div className="flex justify-between items-center">
-                            <h2 className="font-black text-xl text-black uppercase tracking-wider">Videos Found ({songs.length})</h2>
-                            <span className="text-xs text-black/40 font-bold uppercase border border-black/20 rounded px-2 py-1">Editable Metadata</span>
+                            <h2 className="font-black text-xl text-white uppercase tracking-wider">Videos Found ({songs.length})</h2>
+                            <span className="text-[10px] text-white/60 font-bold uppercase border border-white/20 rounded px-2 py-1">Editable Metadata</span>
                         </div>
 
                         {/* Selection Controls */}
                         {songs.length > 0 && (
                             <div className="flex gap-2">
-                                <button onClick={selectAll} className="px-3 py-1 bg-black text-white text-[10px] font-black uppercase rounded hover:bg-gray-800 transition-colors">Select All</button>
-                                <button onClick={selectNew} className="px-3 py-1 bg-white border-2 border-black text-black text-[10px] font-black uppercase rounded hover:bg-gray-100 transition-colors">Select New</button>
-                                <button onClick={selectNone} className="px-3 py-1 text-black/40 hover:text-red-500 text-[10px] font-black uppercase transition-colors">Clear</button>
+                                <button onClick={selectAll} className="px-3 py-1 bg-white text-[#ff0000] text-[10px] font-black uppercase rounded hover:bg-gray-200 transition-colors shadow-md">Select All</button>
+                                <button onClick={selectNew} className="px-3 py-1 bg-black/20 border-2 border-white/20 text-white text-[10px] font-black uppercase rounded hover:bg-black/40 transition-colors shadow-md">Select New</button>
+                                <button onClick={selectNone} className="px-3 py-1 text-white/40 hover:text-white text-[10px] font-black uppercase transition-colors">Clear</button>
                             </div>
                         )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                         {songs.length === 0 && (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-4">
-                                <Search size={64} className="opacity-50 stroke-[3]" />
-                                <p className="text-lg uppercase tracking-widest font-black opacity-50">No Videos Scanned</p>
+                            <div className="h-full flex flex-col items-center justify-center text-white/20 space-y-4">
+                                <Search size={64} className="stroke-[3]" />
+                                <p className="text-xl uppercase tracking-widest font-black">No Videos Scanned</p>
                             </div>
                         )}
 
                         {songs.map((song, idx) => (
-                            <div key={idx} className={`flex items-center p-3 hover:bg-gray-50 rounded-xl border-2 transition-all ${song.isSelected ? 'border-black bg-gray-50' : 'border-transparent'}`}>
-                                <button onClick={() => toggleSelect(idx)} className={`w-6 h-6 rounded-lg border-2 mr-4 flex items-center justify-center transition-all ${song.isSelected ? 'bg-black border-black' : 'border-gray-300 hover:border-black'}`}>
-                                    {song.isSelected && <Check size={16} className="text-white stroke-[4]" />}
+                            <div key={idx} className={`flex items-center p-3 hover:bg-black/10 rounded-xl border-2 transition-all group ${song.isSelected ? 'border-white bg-white/10' : 'border-transparent bg-black/10'}`}>
+                                <button onClick={() => toggleSelect(idx)} className={`w-8 h-8 rounded-lg border-2 mr-4 flex items-center justify-center transition-all ${song.isSelected ? 'bg-white border-white' : 'border-white/20 hover:border-white'}`}>
+                                    {song.isSelected && <Check size={20} className="text-[#ff0000] stroke-[4]" />}
                                 </button>
 
                                 <div className="flex-1 overflow-hidden pr-4 group">
@@ -220,7 +221,7 @@ export function YoutubeView({ onBack }: Props) {
                                             setSongs(newSongs);
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="bg-transparent border-b border-transparent focus:border-black p-0 text-black font-black text-base w-full outline-none placeholder-gray-300 transition-colors uppercase tracking-tight"
+                                        className="bg-transparent border-b border-transparent focus:border-white p-0 text-white font-black text-base w-full outline-none placeholder-white/30 transition-colors uppercase tracking-tight"
                                         placeholder="TITLE"
                                     />
                                     <input
@@ -231,16 +232,16 @@ export function YoutubeView({ onBack }: Props) {
                                             setSongs(newSongs);
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="bg-transparent border-b border-transparent focus:border-black p-0 text-xs text-gray-500 font-bold w-full outline-none transition-colors uppercase tracking-wide mt-1"
+                                        className="bg-transparent border-b border-transparent focus:border-white p-0 text-xs text-white/60 font-bold w-full outline-none transition-colors uppercase tracking-wide mt-1 focus:text-white"
                                         placeholder="ARTIST"
                                     />
                                 </div>
 
                                 <div className="flex flex-col items-end space-y-1">
-                                    <span className={`text-[10px] uppercase font-black px-2 py-1 rounded border-2 border-black ${song.status === 'downloaded' || song.status === 'exists' ? 'bg-black text-white' :
-                                        song.status === 'downloading' ? 'bg-[#ff0000] text-white animate-pulse border-[#ff0000]' :
-                                            song.status === 'error' ? 'bg-gray-200 text-red-500 border-red-500' :
-                                                'bg-gray-100 text-gray-400 border-transparent'
+                                    <span className={`text-[10px] uppercase font-black px-2 py-1 rounded shadow-sm ${song.status === 'downloaded' || song.status === 'exists' ? 'bg-black text-white' :
+                                        song.status === 'downloading' ? 'bg-white text-[#ff0000] border-2 border-white animate-pulse' :
+                                            song.status === 'error' ? 'bg-white text-red-600' :
+                                                'bg-black/20 text-white/40'
                                         }`}>
                                         {song.status === 'exists' ? 'DONE' : song.status}
                                     </span>

@@ -1,3 +1,4 @@
+import { HelpCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import MainLogo from '../assets/main-logo.png';
 import SoundcloudLogo from '../assets/soundcloud-logo.png';
@@ -25,6 +26,15 @@ export function SplitScreen({ onSelectService }: Props) {
 
     return (
         <div className="flex w-full h-screen font-sans select-none relative">
+            {/* Help Button to Recall Overlay */}
+            <button
+                onClick={() => setShowOnboarding(true)}
+                className="absolute top-6 right-6 z-40 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/50 hover:text-white transition-colors"
+                title="Show Info & Instructions"
+            >
+                <HelpCircle size={24} />
+            </button>
+
             {/* Onboarding Overlay */}
             {showOnboarding && (
                 <div className="absolute inset-0 z-50 backdrop-blur-md bg-black/40 flex items-center justify-center p-8">
@@ -33,6 +43,24 @@ export function SplitScreen({ onSelectService }: Props) {
                             <img src={MainLogo} alt="App Logo" className="h-32 mb-8 drop-shadow-2xl" />
 
                             <h1 className="text-3xl font-bold text-white mb-4">Welcome to Universal Music Downloader</h1>
+
+                            <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 mb-6">
+                                <h3 className="text-red-500 font-bold text-sm uppercase mb-1">⚠️ Legal Disclaimer</h3>
+                                <p className="text-xs text-red-200/80 leading-relaxed">
+                                    This application is a <strong>Proof of Concept for Educational Purposes Only</strong>.
+                                    By using this tool, you agree to respect the Terms of Service of all supported platforms.
+                                    Do not use this tool to infringe on copyright. The authors assume no liability for misuse.
+                                </p>
+                            </div>
+
+                            <div className="bg-blue-500/10 border border-blue-500/50 rounded-xl p-4 mb-6">
+                                <h3 className="text-blue-400 font-bold text-sm uppercase mb-1">ℹ️ Requirement: Public Playlists</h3>
+                                <p className="text-xs text-blue-200/80 leading-relaxed">
+                                    Please ensure your playlists on Spotify/SoundCloud/YouTube are set to <strong>Public</strong>.
+                                    The tool cannot access Private or Collaborative playlists.
+                                </p>
+                            </div>
+
                             <p className="text-gray-400 mb-8 leading-relaxed">
                                 This application allows you to download your favorite music from Spotify, SoundCloud, and YouTube in high quality.
                             </p>
