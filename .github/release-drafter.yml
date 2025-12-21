@@ -28,8 +28,59 @@ version-resolver:
       - 'fix'
   default: patch
 template: |
+  ![Release Banner](https://via.placeholder.com/1200x400.png?text=Universal+Music+Downloader+v$RESOLVED_VERSION+Mockup)
+  
+  # Universal Music Downloader v$RESOLVED_VERSION 🎵
+
+  [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple)](https://github.com/Wirthzig/universal-music-downloader/releases)
+  [![Build Verified](https://img.shields.io/badge/build-verified-success?style=for-the-badge&logo=githubactions)](https://github.com/Wirthzig/universal-music-downloader/actions)
+  [![Vibe Check](https://img.shields.io/badge/vibe-impeccable-ff00d4?style=for-the-badge)]()
+
+  > **The ultimate tool to yeet your favorite playlists onto your hard drive.**  
+  > *Proof of Concept - For Educational Use Only (Don't sue us)*
+
+  ---
+
+  ## ✨ Why this hits different
+  
+  *   🔥 **Spotify Downloader**: Rips entire playlists faster than you can say "Premium".
+  *   ☁️ **SoundCloud Support**: Snags those underground sets that aren't on main.
+  *   🎥 **YouTube Extraction**: Smart filtering to avoid those "10 Hours of Silence" videos.
+  *   🎨 **Aesthetic UI**: Glassmorphism + Monochrome themes (Orange/Red/Green) because we have taste.
+  *   🏷️ **Auto-Tagging**: Your library won't look like a mess anymore.
+  *   🛡️ **Privacy Focused**: Your credentials stay on your machine. **Nothing is sent to our servers (cause there are no servers).**
+
+  ---
+
   ## What's Changed
   $CHANGES
 
   ## 👷 Contributors
   $CONTRIBUTORS
+
+  ---
+  
+  ## ⚙️ Setup Guide (For the Spotify Girlies)
+  <details>
+  <summary><strong>🟢 Click to reveal (Spotify Setup)</strong></summary>
+
+  ### 1. Create a Spotify App
+  1.  Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+  2.  Create App -> Name it `MyMusicApp`.
+  3.  Redirect URI: `http://localhost:3000`.
+
+  ### 2. Enter in App
+  1.  Copy Client ID/Secret.
+  2.  Paste it in the app's Spotify View sidebar.
+  </details>
+
+  ---
+
+  ## 📥 Download
+  | Platform | Arch | File | SHA-256 (Trust Factor) |
+  | :--- | :--- | :--- | :--- |
+  | **macOS** | Apple Silicon | [**Download .dmg**](https://github.com/Wirthzig/universal-music-downloader/releases/latest/download/Universal-Music-Downloader-v$RESOLVED_VERSION-macOS-Silicon.dmg) | `SHA256_HASH_GOES_HERE` |
+
+  ## ⚠️ Legal Disclaimer
+  *Educational Purpose Only. Do not infringe copyright.*
+
