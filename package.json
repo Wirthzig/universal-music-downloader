@@ -64,7 +64,6 @@
     },
     "dmg": {
       "iconSize": 120,
-      "background": "src/assets/dmg-background.png",
       "contents": [
         {
           "x": 130,
