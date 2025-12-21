@@ -72,6 +72,19 @@ graph TD
 
 ---
 
+## ❓ Troubleshooting: "App is Damaged"?
+
+If you start the app and see **"Universal Music Downloader is damaged and can't be opened"**, this is a standard macOS warning for apps downloaded from GitHub.
+
+**The Fix:**
+Run this command in your terminal after moving the app to your Applications folder:
+
+```bash
+sudo xattr -cr /Applications/Universal\ Music\ Downloader.app
+```
+
+---
+
 ## 📚 Engineering Manual & Course
 
 This document serves as a comprehensive breakdown of the systems engineering required to build a production-grade desktop application.
