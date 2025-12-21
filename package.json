@@ -4,15 +4,22 @@
   "type": "module",
   "version": "1.0.0",
   "main": "dist-electron/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wirthzig/universal-music-downloader"
+  },
   "author": "Alexander Wirths",
-  "description": "Download Spotify Playlists via YouTube",
+  "description": "Download Music from Spotify, SoundCloud, and YouTube",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
+    "checksum": "node scripts/generate_checksum.js",
     "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.7.9",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
@@ -37,15 +44,39 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.wirthzig.spotifydownloader",
-    "productName": "SpotifyDownloader",
+    "appId": "com.wirthzig.universalmusicdownloader",
+    "productName": "Universal Music Downloader",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Wirthzig",
+        "repo": "universal-music-downloader"
+      }
+    ],
     "directories": {
       "output": "dist_app"
     },
     "mac": {
       "target": "dmg",
       "category": "public.app-category.music",
-      "icon": "src/assets/main-logo.png"
+      "icon": "src/assets/main-logo.png",
+      "artifactName": "${productName}-v${version}-macOS-Silicon.${ext}"
+    },
+    "dmg": {
+      "iconSize": 120,
+      "background": "src/assets/dmg-background.png",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     },
     "files": [
       "dist/**/*",

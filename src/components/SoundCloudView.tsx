@@ -130,50 +130,51 @@ export function SoundCloudView({ onBack }: Props) {
             <div className="fixed top-0 left-0 w-full h-12 z-50 draggable-header hover:bg-black/5 transition-colors" />
 
             {/* Back Button */}
-            <button onClick={onBack} className="absolute top-14 left-8 p-2 rounded-full hover:bg-black/10 text-black/50 hover:text-black transition-colors z-50 group">
-                <ChevronLeft size={32} />
-                <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none">Back</span>
+            <button onClick={onBack} className="absolute top-14 left-8 p-3 rounded-full bg-black text-white hover:scale-105 transition-transform z-50 shadow-xl group">
+                <ChevronLeft size={24} />
+                <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap pointer-events-none shadow-lg">BACK</span>
             </button>
 
             {/* Header */}
             <div className="mb-8 mt-4 relative z-10 flex flex-col items-center">
-                <img src={Logo} alt="SoundCloud" className="h-24 object-contain drop-shadow-xl" />
-                <h1 className="text-4xl font-black mt-4 text-black uppercase tracking-tighter">SoundCloud</h1>
-                <p className="text-sm text-black/60 font-medium mt-1 uppercase tracking-widest">{statusMsg}</p>
+                <img src={Logo} alt="SoundCloud" className="h-24 object-contain drop-shadow-2xl" />
+                <h1 className="text-4xl font-black mt-4 text-black uppercase tracking-tighter drop-shadow-sm">SoundCloud</h1>
+                <p className="text-sm text-black/70 font-bold mt-1 uppercase tracking-widest">{statusMsg}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
                 {/* Sidebar (Input) */}
-                <div className="col-span-1 space-y-4">
-                    <div className="bg-black text-white p-6 rounded-3xl shadow-2xl">
-                        <h2 className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-widest">Target URL</h2>
+                <div className="col-span-1 space-y-6">
+                    {/* MONOCHROME CONTAINER: Same Orange BG, Black Shadow */}
+                    <div className="bg-[#ff5500] text-black p-6 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-black/5 relative overflow-hidden">
+                        <h2 className="text-xs font-black text-black uppercase mb-4 tracking-widest relative z-10">Target URL</h2>
                         <input
-                            className="w-full bg-white/10 border border-white/10 rounded-xl p-3 mb-4 text-sm focus:border-white focus:bg-white/20 outline-none transition-all placeholder-gray-500 text-white"
+                            className="w-full bg-black/10 border-2 border-transparent focus:border-black/20 rounded-xl p-3 mb-4 text-sm font-bold focus:bg-white outline-none transition-all placeholder-black/40 text-black relative z-10"
                             placeholder="Paste Playlist or Track Link..."
                             value={url} onChange={e => setUrl(e.target.value)}
                         />
                         <button
                             onClick={scanUrl}
-                            className="w-full bg-white text-black hover:bg-gray-200 font-bold py-3 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-lg"
+                            className="relative z-10 w-full bg-black text-white hover:bg-gray-900 font-bold py-4 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-lg active:scale-95"
                         >
-                            <Search size={18} />
-                            <span>SCAN</span>
+                            <Search size={18} className="stroke-[3]" />
+                            <span className="uppercase tracking-wider">SCAN</span>
                         </button>
                     </div>
 
-                    <div className="bg-black text-white p-6 rounded-3xl shadow-2xl">
-                        <button onClick={selectFolder} className="w-full mb-4 bg-white/10 hover:bg-white/20 py-3 rounded-xl flex items-center justify-center text-sm transition-colors font-medium">
-                            <FolderOpen size={18} className="mr-2" />
-                            {targetFolder ? 'Folder Selected' : 'Choose Output Folder'}
+                    <div className="bg-[#ff5500] text-black p-6 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-black/5">
+                        <button onClick={selectFolder} className="w-full mb-4 bg-black/10 hover:bg-black/20 border-2 border-transparent py-3 rounded-xl flex items-center justify-center text-sm transition-colors text-sm font-bold uppercase tracking-wide">
+                            <FolderOpen size={18} className="mr-2 stroke-[2.5]" />
+                            {targetFolder ? 'Folder Selected' : 'Choose Folder'}
                         </button>
 
                         <div className="flex gap-2">
                             {!isProcessing ? (
-                                <button onClick={startProcess} className="flex-1 bg-white text-black hover:bg-gray-200 py-4 rounded-xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center shadow-lg transform active:scale-95">
+                                <button onClick={startProcess} className="flex-1 bg-black text-white hover:bg-gray-900 py-4 rounded-xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center shadow-lg transform active:scale-95">
                                     <DownloadCloud size={20} className="mr-2" /> Download
                                 </button>
                             ) : (
-                                <button onClick={() => abortRef.current = true} className="flex-1 bg-[#ff5500] text-white py-4 rounded-xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center shadow-lg animate-pulse">
+                                <button onClick={() => abortRef.current = true} className="flex-1 bg-white text-[#ff5500] border-2 border-white py-4 rounded-xl text-sm font-black uppercase tracking-wider transition-colors flex items-center justify-center shadow-lg animate-pulse">
                                     <Square size={20} className="mr-2 fill-current" /> Stop
                                 </button>
                             )}
@@ -182,34 +183,34 @@ export function SoundCloudView({ onBack }: Props) {
                 </div>
 
                 {/* List Container */}
-                <div className="col-span-1 md:col-span-2 bg-black text-white rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[600px] border-4 border-black">
-                    <div className="p-6 border-b border-white/10 bg-white/5 flex flex-col gap-4">
+                <div className="col-span-1 md:col-span-2 bg-[#ff5500] rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-black/5 overflow-hidden flex flex-col h-[600px] relative">
+                    <div className="p-6 bg-black/5 border-b border-black/5 flex flex-col gap-4">
                         <div className="flex justify-between items-center">
-                            <h2 className="font-bold text-lg uppercase tracking-wider">Tracks Found ({songs.length})</h2>
-                            <span className="text-xs text-gray-500 font-mono">EDIT META BEFORE DL</span>
+                            <h2 className="font-black text-lg text-black uppercase tracking-wider">Tracks Found ({songs.length})</h2>
+                            <span className="text-[10px] text-black/50 font-bold uppercase border border-black/10 rounded px-2 py-1 bg-white/20">Editable Metadata</span>
                         </div>
 
                         {songs.length > 0 && (
                             <div className="flex gap-2">
-                                <button onClick={selectAll} className="px-3 py-1 bg-[#ff5500] text-white text-[10px] font-black uppercase rounded hover:bg-[#ff6600] transition-colors">Select All</button>
-                                <button onClick={selectNew} className="px-3 py-1 bg-white/10 border border-white/20 text-white text-[10px] font-black uppercase rounded hover:bg-white/20 transition-colors">Select New</button>
-                                <button onClick={selectNone} className="px-3 py-1 text-gray-500 hover:text-white text-[10px] font-black uppercase transition-colors">Clear</button>
+                                <button onClick={selectAll} className="px-3 py-1 bg-black text-white text-[10px] font-black uppercase rounded hover:bg-gray-800 transition-colors shadow-md">Select All</button>
+                                <button onClick={selectNew} className="px-3 py-1 bg-white text-black text-[10px] font-black uppercase rounded hover:bg-gray-100 transition-colors shadow-md">Select New</button>
+                                <button onClick={selectNone} className="px-3 py-1 text-black/50 hover:text-black text-[10px] font-black uppercase transition-colors">Clear</button>
                             </div>
                         )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                         {songs.length === 0 && (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-600 space-y-4">
-                                <Search size={48} className="opacity-20" />
-                                <p className="text-sm uppercase tracking-widest font-bold opacity-50">No Tracks Scanned</p>
+                            <div className="h-full flex flex-col items-center justify-center text-black/20 space-y-4">
+                                <Search size={64} className="stroke-[3]" />
+                                <p className="text-xl uppercase tracking-widest font-black">No Tracks Scanned</p>
                             </div>
                         )}
 
                         {songs.map((song, idx) => (
-                            <div key={idx} className={`flex items-center p-3 hover:bg-white/5 rounded-xl border transition-all ${song.isSelected ? 'border-[#ff5500]/50 bg-white/5' : 'border-transparent'}`}>
-                                <button onClick={() => toggleSelect(idx)} className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center transition-all ${song.isSelected ? 'bg-[#ff5500] border-[#ff5500]' : 'border-gray-600 hover:border-gray-400'}`}>
-                                    {song.isSelected && <Check size={14} className="text-black stroke-[3]" />}
+                            <div key={idx} className={`flex items-center p-3 hover:bg-black/5 rounded-xl border-2 transition-all group ${song.isSelected ? 'border-black bg-white/20' : 'border-transparent bg-black/5'}`}>
+                                <button onClick={() => toggleSelect(idx)} className={`w-8 h-8 rounded-lg border-2 mr-4 flex items-center justify-center transition-all bg-white ${song.isSelected ? 'border-black' : 'border-black/10 group-hover:border-black/30'}`}>
+                                    {song.isSelected && <Check size={20} className="text-black stroke-[4]" />}
                                 </button>
 
                                 <div className="flex-1 overflow-hidden pr-4">
@@ -222,7 +223,7 @@ export function SoundCloudView({ onBack }: Props) {
                                             setSongs(newSongs);
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="bg-transparent border-none p-0 text-white font-bold text-sm w-full outline-none focus:text-[#ff5500] placeholder-gray-600 transition-colors"
+                                        className="bg-transparent border-b border-transparent focus:border-black p-0 text-black font-black text-base w-full outline-none placeholder-black/30 transition-colors"
                                         placeholder="Title"
                                     />
                                     <input
@@ -233,16 +234,16 @@ export function SoundCloudView({ onBack }: Props) {
                                             setSongs(newSongs);
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="bg-transparent border-none p-0 text-xs text-gray-400 w-full outline-none focus:text-white transition-colors"
+                                        className="bg-transparent border-b border-transparent focus:border-black p-0 text-xs text-black/60 font-bold w-full outline-none focus:text-black transition-colors uppercase tracking-wide mt-1"
                                         placeholder="Artist"
                                     />
                                 </div>
 
                                 <div className="flex flex-col items-end space-y-1">
-                                    <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-md ${song.status === 'downloaded' || song.status === 'exists' ? 'bg-green-500 text-black' :
-                                        song.status === 'downloading' ? 'bg-[#ff5500] text-white animate-pulse' :
+                                    <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-md shadow-sm ${song.status === 'downloaded' || song.status === 'exists' ? 'bg-black text-white' :
+                                        song.status === 'downloading' ? 'bg-white text-[#ff5500] border-2 border-[#ff5500] animate-pulse' :
                                             song.status === 'error' ? 'bg-red-500 text-white' :
-                                                'bg-gray-800 text-gray-500'
+                                                'bg-black/10 text-black/50'
                                         }`}>
                                         {song.status === 'exists' ? 'DONE' : song.status}
                                     </span>

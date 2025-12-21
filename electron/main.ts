@@ -103,8 +103,8 @@ let initPromise: Promise<void> | null = null;
 function createWindow() {
     console.log('[Main] Creating Window...');
     const win = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 1500,
+        height: 1000,
         titleBarStyle: 'hidden',
         vibrancy: 'under-window',
         visualEffectState: 'active',
@@ -123,9 +123,20 @@ function createWindow() {
     }
 }
 
+import log from 'electron-log';
+import { autoUpdater } from 'electron-updater';
+
+// --- AUTO UPDATER CONFIG ---
+log.transports.file.level = 'info';
+autoUpdater.logger = log;
+
 app.whenReady().then(async () => {
     console.log(`[Main] App Ready. Node: ${process.version}, Arch: ${process.arch}, Platform: ${process.platform}`);
     createWindow();
+
+    // Check for updates immediately
+    console.log('[Main] Checking for updates...');
+    autoUpdater.checkForUpdatesAndNotify();
 
     // Parallel init
     initPromise = Promise.all([setupYtDlp(), setupFFmpeg()])
@@ -329,6 +340,37 @@ app.whenReady().then(async () => {
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+});
+
+// --- UPDATER EVENTS ---
+autoUpdater.on('checking-for-update', () => {
+    log.info('Checking for update...');
+});
+autoUpdater.on('update-available', (info) => {
+    log.info('Update available.', info);
+});
+autoUpdater.on('update-not-available', (info) => {
+    log.info('Update not available.', info);
+});
+autoUpdater.on('error', (err) => {
+    log.error('Error in auto-updater. ' + err);
+});
+autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+    log.info(log_message);
+});
+autoUpdater.on('update-downloaded', (info) => {
+    log.info('Update downloaded');
+    dialog.showMessageBox({
+        type: 'info',
+        title: 'Update Ready',
+        message: 'A new version has been downloaded. Restart now to apply?',
+        buttons: ['Restart', 'Later']
+    }).then((returnValue) => {
+        if (returnValue.response === 0) autoUpdater.quitAndInstall();
     });
 });
 
