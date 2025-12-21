@@ -81,5 +81,18 @@ template: |
   | :--- | :--- | :--- | :--- |
   | **macOS** | Apple Silicon | [**Download .dmg**](https://github.com/Wirthzig/universal-music-downloader/releases/latest/download/Universal-Music-Downloader-v$RESOLVED_VERSION-macOS-Silicon.dmg) | `SHA256_HASH_GOES_HERE` |
 
+  ---
+
+  ## ❓ Functionality: "App is Damaged" Error?
+  Because this is an indie open-source app, macOS might flag it. **You do NOT need to run terminal commands.**
+  
+  **The Fix (10 seconds):**
+  1.  Drag the App to your **Applications** folder.
+  2.  **Right-Click** (or Control-Click) the App icon.
+  3.  Select **Open** from the menu.
+  4.  Click **Open** in the dialog box.
+  *(You only have to do this once).*
+
+
   ## ⚠️ Legal Disclaimer
   *Educational Purpose Only. Do not infringe copyright.*
