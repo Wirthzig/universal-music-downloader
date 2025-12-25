@@ -1,4 +1,4 @@
-import { HelpCircle } from 'lucide-react';
+import { Coffee, HelpCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import MainLogo from '../assets/main-logo.png';
 import SoundcloudLogo from '../assets/soundcloud-logo.png';
@@ -34,6 +34,17 @@ export function SplitScreen({ onSelectService }: Props) {
             >
                 <HelpCircle size={24} />
             </button>
+
+            {/* Buy Me a Coffee Button */}
+            <a
+                href="https://ko-fi.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-6 right-20 z-40 p-2 rounded-full bg-[#FF5E5B]/10 hover:bg-[#FF5E5B]/20 text-[#FF5E5B] hover:text-[#FF5E5B]/80 transition-colors border border-[#FF5E5B]/20"
+                title="Buy me a coffee"
+            >
+                <Coffee size={24} />
+            </a>
 
             {/* Onboarding Overlay */}
             {showOnboarding && (
