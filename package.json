@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/main.cjs",
   "repository": {
     "type": "git",
     "url": "https://github.com/Wirthzig/universal-music-downloader"
@@ -33,7 +33,7 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.0",
     "cross-env": "^7.0.3",
-    "electron": "^33.2.1",
+    "electron": "^26.0.0",
     "electron-builder": "^25.1.8",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
@@ -57,10 +57,16 @@
       "output": "dist_app"
     },
     "mac": {
-      "target": "dmg",
+      "target": {
+        "target": "dmg",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      },
       "category": "public.app-category.music",
       "icon": "src/assets/main-logo.png",
-      "artifactName": "${productName}-v${version}-macOS-Silicon.${ext}"
+      "artifactName": "${productName}-v${version}-macOS-${arch}.${ext}"
     },
     "dmg": {
       "iconSize": 120,

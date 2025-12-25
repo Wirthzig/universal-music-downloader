@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, DownloadCloud, FolderOpen, Search, Square } from 'lucide-react';
+import { Check, ChevronLeft, DownloadCloud, FolderOpen, Loader2, Search, Square } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Logo from '../assets/youtube-logo.png'; // Re-using existing logo
 import { HistoryManager } from '../utils/historyManager';
@@ -24,11 +24,15 @@ export function YoutubeView({ onBack }: Props) {
     const [statusMsg, setStatusMsg] = useState('Ready');
     const [targetFolder, setTargetFolder] = useState<string | null>(localStorage.getItem('target_folder'));
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showErrorOverlay, setShowErrorOverlay] = useState(false);
     const abortRef = useRef(false);
 
     const scanUrl = async () => {
         if (!url) { setStatusMsg('Please enter a URL'); return; }
         setStatusMsg('Scanning YouTube...');
+        setIsLoading(true);
+        setShowErrorOverlay(false);
 
         try {
             const res = await window.electronAPI.fetchMetadata(url);
@@ -50,10 +54,14 @@ export function YoutubeView({ onBack }: Props) {
                 setStatusMsg(`Found ${newSongs.length} video(s).`);
             } else {
                 setStatusMsg(res.error || 'No videos found or invalid URL');
+                setShowErrorOverlay(true);
             }
         } catch (e) {
             console.error(e);
             setStatusMsg('Error scanning URL (Check Console)');
+            setShowErrorOverlay(true);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -123,6 +131,27 @@ export function YoutubeView({ onBack }: Props) {
 
     return (
         <div className="min-h-screen bg-[#ff0000] text-white px-6 pb-6 pt-12 font-sans select-none flex flex-col items-center relative">
+
+            {/* Funny Error Overlay */}
+            {showErrorOverlay && (
+                <div className="absolute inset-0 z-50 backdrop-blur-md flex items-center justify-center p-8">
+                    <div className="bg-black/80 border border-white/20 rounded-2xl p-8 max-w-lg w-full shadow-2xl relative text-center backdrop-blur-xl">
+                        <h2 className="text-3xl font-black text-[#ff0000] mb-4 uppercase tracking-wide">Whoops! We hit a wall. 🧱</h2>
+                        <p className="text-gray-300 mb-6 text-lg leading-relaxed">
+                            It looks like this video/playlist is playing hard to get (Private) or doesn't exist.
+                            We aren't hackers, we can only see what's public! 🕵️‍♂️
+                        </p>
+                        <p className="text-sm text-gray-500 mb-8 font-mono">
+                            Please check the link and make sure it's Public.
+                        </p>
+
+                        <button onClick={() => setShowErrorOverlay(false)} className="bg-[#ff0000] text-white hover:bg-white hover:text-[#ff0000] font-black py-3 px-8 rounded-full transition-colors w-full shadow-lg">
+                            TRY AGAIN
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Drag Handle */}
             <div className="fixed top-0 left-0 w-full h-12 z-50 draggable-header hover:bg-black/5 transition-colors" />
 
@@ -198,56 +227,61 @@ export function YoutubeView({ onBack }: Props) {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                        {songs.length === 0 && (
+                        {isLoading ? (
+                            <div className="h-full flex flex-col items-center justify-center text-white/50 space-y-4">
+                                <Loader2 size={48} className="text-white animate-spin" />
+                                <p className="text-2xl font-black uppercase tracking-widest animate-pulse">Scanning...</p>
+                            </div>
+                        ) : songs.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-white/20 space-y-4">
                                 <Search size={64} className="stroke-[3]" />
                                 <p className="text-xl uppercase tracking-widest font-black">No Videos Scanned</p>
                             </div>
+                        ) : (
+                            songs.map((song, idx) => (
+                                <div key={idx} className={`flex items-center p-3 hover:bg-black/10 rounded-xl border-2 transition-all group ${song.isSelected ? 'border-white bg-white/10' : 'border-transparent bg-black/10'}`}>
+                                    <button onClick={() => toggleSelect(idx)} className={`w-8 h-8 rounded-lg border-2 mr-4 flex items-center justify-center transition-all ${song.isSelected ? 'bg-white border-white' : 'border-white/20 hover:border-white'}`}>
+                                        {song.isSelected && <Check size={20} className="text-[#ff0000] stroke-[4]" />}
+                                    </button>
+
+                                    <div className="flex-1 overflow-hidden pr-4 group">
+                                        {/* Editable Inputs */}
+                                        <input
+                                            value={song.title}
+                                            onChange={(e) => {
+                                                const newSongs = [...songs];
+                                                newSongs[idx].title = e.target.value;
+                                                setSongs(newSongs);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="bg-transparent border-b border-transparent focus:border-white p-0 text-white font-black text-base w-full outline-none placeholder-white/30 transition-colors uppercase tracking-tight"
+                                            placeholder="TITLE"
+                                        />
+                                        <input
+                                            value={song.artist}
+                                            onChange={(e) => {
+                                                const newSongs = [...songs];
+                                                newSongs[idx].artist = e.target.value;
+                                                setSongs(newSongs);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="bg-transparent border-b border-transparent focus:border-white p-0 text-xs text-white/60 font-bold w-full outline-none transition-colors uppercase tracking-wide mt-1 focus:text-white"
+                                            placeholder="ARTIST"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col items-end space-y-1">
+                                        <span className={`text-[10px] uppercase font-black px-2 py-1 rounded shadow-sm ${song.status === 'downloaded' || song.status === 'exists' ? 'bg-black text-white' :
+                                            song.status === 'downloading' ? 'bg-white text-[#ff0000] border-2 border-white animate-pulse' :
+                                                song.status === 'error' ? 'bg-white text-red-600' :
+                                                    'bg-black/20 text-white/40'
+                                            }`}>
+                                            {song.status === 'exists' ? 'DONE' : song.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
                         )}
-
-                        {songs.map((song, idx) => (
-                            <div key={idx} className={`flex items-center p-3 hover:bg-black/10 rounded-xl border-2 transition-all group ${song.isSelected ? 'border-white bg-white/10' : 'border-transparent bg-black/10'}`}>
-                                <button onClick={() => toggleSelect(idx)} className={`w-8 h-8 rounded-lg border-2 mr-4 flex items-center justify-center transition-all ${song.isSelected ? 'bg-white border-white' : 'border-white/20 hover:border-white'}`}>
-                                    {song.isSelected && <Check size={20} className="text-[#ff0000] stroke-[4]" />}
-                                </button>
-
-                                <div className="flex-1 overflow-hidden pr-4 group">
-                                    {/* Editable Inputs */}
-                                    <input
-                                        value={song.title}
-                                        onChange={(e) => {
-                                            const newSongs = [...songs];
-                                            newSongs[idx].title = e.target.value;
-                                            setSongs(newSongs);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="bg-transparent border-b border-transparent focus:border-white p-0 text-white font-black text-base w-full outline-none placeholder-white/30 transition-colors uppercase tracking-tight"
-                                        placeholder="TITLE"
-                                    />
-                                    <input
-                                        value={song.artist}
-                                        onChange={(e) => {
-                                            const newSongs = [...songs];
-                                            newSongs[idx].artist = e.target.value;
-                                            setSongs(newSongs);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="bg-transparent border-b border-transparent focus:border-white p-0 text-xs text-white/60 font-bold w-full outline-none transition-colors uppercase tracking-wide mt-1 focus:text-white"
-                                        placeholder="ARTIST"
-                                    />
-                                </div>
-
-                                <div className="flex flex-col items-end space-y-1">
-                                    <span className={`text-[10px] uppercase font-black px-2 py-1 rounded shadow-sm ${song.status === 'downloaded' || song.status === 'exists' ? 'bg-black text-white' :
-                                        song.status === 'downloading' ? 'bg-white text-[#ff0000] border-2 border-white animate-pulse' :
-                                            song.status === 'error' ? 'bg-white text-red-600' :
-                                                'bg-black/20 text-white/40'
-                                        }`}>
-                                        {song.status === 'exists' ? 'DONE' : song.status}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </div>

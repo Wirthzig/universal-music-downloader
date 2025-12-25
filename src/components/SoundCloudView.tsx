@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, DownloadCloud, FolderOpen, Search, Square } from 'lucide-react';
+import { Check, ChevronLeft, DownloadCloud, FolderOpen, Loader2, Search, Square } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Logo from '../assets/soundcloud-logo.png';
 import { HistoryManager } from '../utils/historyManager';
@@ -24,12 +24,16 @@ export function SoundCloudView({ onBack }: Props) {
     const [statusMsg, setStatusMsg] = useState('Ready');
     const [targetFolder, setTargetFolder] = useState<string | null>(localStorage.getItem('target_folder'));
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showErrorOverlay, setShowErrorOverlay] = useState(false);
     const abortRef = useRef(false);
 
     const scanUrl = async () => {
         if (!url) { setStatusMsg('Please enter a URL'); return; }
 
         setStatusMsg('Scanning SoundCloud...');
+        setIsLoading(true);
+        setShowErrorOverlay(false);
 
         try {
             const res = await window.electronAPI.fetchMetadata(url);
@@ -52,10 +56,14 @@ export function SoundCloudView({ onBack }: Props) {
                 setStatusMsg(`Found ${newSongs.length} track(s).`);
             } else {
                 setStatusMsg(res.error || 'No tracks found or invalid URL');
+                setShowErrorOverlay(true);
             }
         } catch (e) {
             console.error(e);
             setStatusMsg('Error scanning URL (Check Console)');
+            setShowErrorOverlay(true);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -126,6 +134,27 @@ export function SoundCloudView({ onBack }: Props) {
 
     return (
         <div className="min-h-screen bg-[#ff5500] text-black px-6 pb-6 pt-12 font-sans select-none flex flex-col items-center relative">
+
+            {/* Funny Error Overlay */}
+            {showErrorOverlay && (
+                <div className="absolute inset-0 z-50 backdrop-blur-md flex items-center justify-center p-8">
+                    <div className="bg-black/80 border border-white/20 rounded-2xl p-8 max-w-lg w-full shadow-2xl relative text-center backdrop-blur-xl">
+                        <h2 className="text-3xl font-black text-[#ff5500] mb-4 uppercase tracking-wide">Whoops! We hit a wall. 🧱</h2>
+                        <p className="text-gray-300 mb-6 text-lg leading-relaxed">
+                            It looks like this track/playlist is playing hard to get (Private) or doesn't exist.
+                            We aren't hackers, we can only see what's public! 🕵️‍♂️
+                        </p>
+                        <p className="text-sm text-gray-500 mb-8 font-mono">
+                            Please check the link and make sure it's Public.
+                        </p>
+
+                        <button onClick={() => setShowErrorOverlay(false)} className="bg-[#ff5500] text-white hover:bg-[#edded6] hover:text-black font-black py-3 px-8 rounded-full transition-colors w-full shadow-lg">
+                            TRY AGAIN
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Drag Handle */}
             <div className="fixed top-0 left-0 w-full h-12 z-50 draggable-header hover:bg-black/5 transition-colors" />
 
@@ -200,56 +229,61 @@ export function SoundCloudView({ onBack }: Props) {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                        {songs.length === 0 && (
+                        {isLoading ? (
+                            <div className="h-full flex flex-col items-center justify-center text-black/50 space-y-4">
+                                <Loader2 size={48} className="text-black animate-spin" />
+                                <p className="text-2xl font-black uppercase tracking-widest animate-pulse">Scanning...</p>
+                            </div>
+                        ) : songs.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-black/20 space-y-4">
                                 <Search size={64} className="stroke-[3]" />
                                 <p className="text-xl uppercase tracking-widest font-black">No Tracks Scanned</p>
                             </div>
+                        ) : (
+                            songs.map((song, idx) => (
+                                <div key={idx} className={`flex items-center p-3 hover:bg-black/5 rounded-xl border-2 transition-all group ${song.isSelected ? 'border-black bg-white/20' : 'border-transparent bg-black/5'}`}>
+                                    <button onClick={() => toggleSelect(idx)} className={`w-8 h-8 rounded-lg border-2 mr-4 flex items-center justify-center transition-all bg-white ${song.isSelected ? 'border-black' : 'border-black/10 group-hover:border-black/30'}`}>
+                                        {song.isSelected && <Check size={20} className="text-black stroke-[4]" />}
+                                    </button>
+
+                                    <div className="flex-1 overflow-hidden pr-4">
+                                        {/* Editable Inputs */}
+                                        <input
+                                            value={song.title}
+                                            onChange={(e) => {
+                                                const newSongs = [...songs];
+                                                newSongs[idx].title = e.target.value;
+                                                setSongs(newSongs);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="bg-transparent border-b border-transparent focus:border-black p-0 text-black font-black text-base w-full outline-none placeholder-black/30 transition-colors"
+                                            placeholder="Title"
+                                        />
+                                        <input
+                                            value={song.artist}
+                                            onChange={(e) => {
+                                                const newSongs = [...songs];
+                                                newSongs[idx].artist = e.target.value;
+                                                setSongs(newSongs);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="bg-transparent border-b border-transparent focus:border-black p-0 text-xs text-black/60 font-bold w-full outline-none focus:text-black transition-colors uppercase tracking-wide mt-1"
+                                            placeholder="Artist"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col items-end space-y-1">
+                                        <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-md shadow-sm ${song.status === 'downloaded' || song.status === 'exists' ? 'bg-black text-white' :
+                                            song.status === 'downloading' ? 'bg-white text-[#ff5500] border-2 border-[#ff5500] animate-pulse' :
+                                                song.status === 'error' ? 'bg-red-500 text-white' :
+                                                    'bg-black/10 text-black/50'
+                                            }`}>
+                                            {song.status === 'exists' ? 'DONE' : song.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
                         )}
-
-                        {songs.map((song, idx) => (
-                            <div key={idx} className={`flex items-center p-3 hover:bg-black/5 rounded-xl border-2 transition-all group ${song.isSelected ? 'border-black bg-white/20' : 'border-transparent bg-black/5'}`}>
-                                <button onClick={() => toggleSelect(idx)} className={`w-8 h-8 rounded-lg border-2 mr-4 flex items-center justify-center transition-all bg-white ${song.isSelected ? 'border-black' : 'border-black/10 group-hover:border-black/30'}`}>
-                                    {song.isSelected && <Check size={20} className="text-black stroke-[4]" />}
-                                </button>
-
-                                <div className="flex-1 overflow-hidden pr-4">
-                                    {/* Editable Inputs */}
-                                    <input
-                                        value={song.title}
-                                        onChange={(e) => {
-                                            const newSongs = [...songs];
-                                            newSongs[idx].title = e.target.value;
-                                            setSongs(newSongs);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="bg-transparent border-b border-transparent focus:border-black p-0 text-black font-black text-base w-full outline-none placeholder-black/30 transition-colors"
-                                        placeholder="Title"
-                                    />
-                                    <input
-                                        value={song.artist}
-                                        onChange={(e) => {
-                                            const newSongs = [...songs];
-                                            newSongs[idx].artist = e.target.value;
-                                            setSongs(newSongs);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="bg-transparent border-b border-transparent focus:border-black p-0 text-xs text-black/60 font-bold w-full outline-none focus:text-black transition-colors uppercase tracking-wide mt-1"
-                                        placeholder="Artist"
-                                    />
-                                </div>
-
-                                <div className="flex flex-col items-end space-y-1">
-                                    <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-md shadow-sm ${song.status === 'downloaded' || song.status === 'exists' ? 'bg-black text-white' :
-                                        song.status === 'downloading' ? 'bg-white text-[#ff5500] border-2 border-[#ff5500] animate-pulse' :
-                                            song.status === 'error' ? 'bg-red-500 text-white' :
-                                                'bg-black/10 text-black/50'
-                                        }`}>
-                                        {song.status === 'exists' ? 'DONE' : song.status}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AlertCircle, Check, ChevronLeft, DownloadCloud, FolderOpen, Search, Square } from 'lucide-react';
+import { AlertCircle, Check, ChevronLeft, Coffee, DownloadCloud, FolderOpen, Loader2, Search, Square } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Logo from '../assets/spotify-logo.png'; // Re-use logo (make sure it looks good on dark)
 import { HistoryManager } from '../utils/historyManager';
@@ -19,12 +19,9 @@ interface Props {
 }
 
 export function SpotifyView({ onBack }: Props) {
-    const [clientId, setClientId] = useState(localStorage.getItem('spotify_client_id') || '');
-    const [clientSecret, setClientSecret] = useState(localStorage.getItem('spotify_client_secret') || '');
-    const [overlayDismissed, setOverlayDismissed] = useState(false);
-
-    // Derived state for overlay
-    const hasCreds = clientId.length > 0 && clientSecret.length > 0;
+    const [isLoading, setIsLoading] = useState(false);
+    const [isWakingUp, setIsWakingUp] = useState(false);
+    const [showErrorOverlay, setShowErrorOverlay] = useState(false);
 
     const [playlistUrl, setPlaylistUrl] = useState('');
     const [songs, setSongs] = useState<Song[]>([]);
@@ -33,32 +30,38 @@ export function SpotifyView({ onBack }: Props) {
     const [isProcessing, setIsProcessing] = useState(false);
     const abortRef = useRef(false);
 
-    const saveCreds = () => {
-        localStorage.setItem('spotify_client_id', clientId);
-        localStorage.setItem('spotify_client_secret', clientSecret);
-    };
-
     const getSpotifyToken = async () => {
-        const authString = btoa(`${clientId}:${clientSecret}`);
         try {
-            const res = await axios.post('https://accounts.spotify.com/api/token', 'grant_type=client_credentials', {
-                headers: {
-                    'Authorization': `Basic ${authString}`,
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            });
+            // Fetch from your Render Backend with 4 min timeout
+            const res = await axios.get('https://universal-music-downloader.onrender.com/token', { timeout: 240000 });
             return res.data.access_token;
         } catch (e) {
             console.error(e);
             setStatusMsg('Spotify Auth Failed');
+            setShowErrorOverlay(true);
             return null;
         }
     };
 
     const scanPlaylist = async () => {
-        saveCreds();
+        // saveCreds(); // No longer needed
+        setIsLoading(true);
+        setIsWakingUp(false);
+        setShowErrorOverlay(false);
+
+        // Backend Wake-up Timer
+        const wakeUpTimer = setTimeout(() => {
+            setIsWakingUp(true);
+        }, 8000); // 8 seconds to trigger "Waking up..." message
+
         const token = await getSpotifyToken();
-        if (!token) return;
+        clearTimeout(wakeUpTimer); // Clear timer immediately after token response
+        setIsWakingUp(false);
+
+        if (!token) {
+            setIsLoading(false);
+            return;
+        }
 
         setStatusMsg('Fetching...');
 
@@ -119,6 +122,9 @@ export function SpotifyView({ onBack }: Props) {
         } catch (e) {
             setStatusMsg('Error fetching data');
             console.error(e);
+            setShowErrorOverlay(true);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -217,18 +223,21 @@ export function SpotifyView({ onBack }: Props) {
     return (
         <div className="min-h-screen bg-[#000000] text-[#1DB954] px-6 pb-6 pt-12 font-sans select-none flex flex-col items-center relative">
 
-            {/* Missing Credentials Overlay (Monochrome Dark) */}
-            {!hasCreds && !overlayDismissed && (
-                <div className="absolute inset-0 z-50 backdrop-blur-md bg-black/90 flex items-center justify-center p-8">
-                    <div className="bg-[#121212] border border-[#1DB954] rounded-2xl p-8 max-w-lg w-full shadow-[0_0_50px_rgba(29,185,84,0.3)] relative text-center">
-                        <AlertCircle size={48} className="mx-auto text-[#1DB954] mb-4" />
-                        <h2 className="text-2xl font-black text-[#1DB954] mb-2 uppercase tracking-wide">Credentials Required</h2>
-                        <p className="text-gray-400 mb-6">
-                            Spotify API access requires your <strong>Client ID</strong> and <strong>Secret</strong>.
+            {/* Funny Error Overlay */}
+            {showErrorOverlay && (
+                <div className="absolute inset-0 z-50 backdrop-blur-md flex items-center justify-center p-8">
+                    <div className="bg-black/80 border border-red-500/50 rounded-2xl p-8 max-w-lg w-full shadow-2xl relative text-center backdrop-blur-xl">
+                        <h2 className="text-3xl font-black text-red-500 mb-4 uppercase tracking-wide">Whoops! We hit a wall. 🧱</h2>
+                        <p className="text-gray-300 mb-6 text-lg leading-relaxed">
+                            It looks like this playlist is playing hard to get (Private) or doesn't exist.
+                            We aren't hackers, we can only see what's public! 🕵️‍♂️
+                        </p>
+                        <p className="text-sm text-gray-500 mb-8 font-mono">
+                            Please check the link and make sure it's Public.
                         </p>
 
-                        <button onClick={() => setOverlayDismissed(true)} className="bg-[#1DB954] text-black hover:bg-[#1ed760] font-black py-3 px-8 rounded-full transition-colors w-full shadow-lg">
-                            ENTER CREDENTIALS
+                        <button onClick={() => setShowErrorOverlay(false)} className="bg-red-500 text-black hover:bg-red-400 font-black py-3 px-8 rounded-full transition-colors w-full shadow-lg">
+                            TRY AGAIN
                         </button>
                     </div>
                 </div>
@@ -254,21 +263,10 @@ export function SpotifyView({ onBack }: Props) {
 
                 {/* Sidebar */}
                 <div className="col-span-1 space-y-6">
-                    {/* Credentials Box */}
-                    <div className="bg-[#181818] p-6 rounded-3xl shadow-[0_0_15px_rgba(255,255,255,0.1)] relative overflow-hidden">
-                        <h2 className="text-xs font-black text-[#1DB954] uppercase mb-4 tracking-widest opacity-80">API Keys</h2>
-                        <input
-                            className="w-full bg-black border border-white/10 focus:border-[#1DB954] rounded-xl p-2 mb-3 text-xs font-mono text-[#1DB954] outline-none transition-all placeholder-[#1DB954]/30"
-                            placeholder="Client ID"
-                            value={clientId} onChange={e => setClientId(e.target.value)}
-                        />
-                        <input
-                            className="w-full bg-black border border-white/10 focus:border-[#1DB954] rounded-xl p-2 text-xs font-mono text-[#1DB954] outline-none transition-all placeholder-[#1DB954]/30"
-                            placeholder="Client Secret"
-                            type="password"
-                            value={clientSecret} onChange={e => setClientSecret(e.target.value)}
-                        />
-                    </div>
+                    {/* Credentials Box REMOVED */}
+                    {/* <div className="bg-[#181818] p-6 rounded-3xl shadow-[0_0_15px_rgba(255,255,255,0.1)] relative overflow-hidden">
+                        ...
+                    </div> */}
 
                     {/* Input Box */}
                     <div className="bg-[#181818] p-6 rounded-3xl shadow-[0_0_15px_rgba(255,255,255,0.1)]">
@@ -323,8 +321,35 @@ export function SpotifyView({ onBack }: Props) {
                         )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                        {songs.length === 0 ? (
+                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar relative">
+                        {isLoading ? (
+                            <div className="h-full flex flex-col items-center justify-center text-[#1DB954]/50 space-y-4">
+                                <Loader2 size={48} className="text-[#1DB954] animate-spin" />
+                                <div className="text-center">
+                                    <p className="text-2xl font-black uppercase tracking-widest animate-pulse">
+                                        {isWakingUp ? 'Waking Up Backend...' : 'Scanning...'}
+                                    </p>
+
+                                    {isWakingUp && (
+                                        <div className="mt-6 max-w-md mx-auto bg-[#1DB954]/10 rounded-xl p-4 border border-[#1DB954]/20">
+                                            <p className="text-sm text-[#1DB954]/80 mb-3 leading-relaxed">
+                                                Our free backend server sleeps when inactive. It might take <strong>1-2 minutes</strong> to start up.
+                                                <br /><br />
+                                                If you buy us a coffee, we might be able to afford a server that never sleeps! (Or at least one that naps less). ☕
+                                            </p>
+                                            <a
+                                                href="https://ko-fi.com/universalmusicdownloader"
+                                                target="_blank"
+                                                className="inline-flex items-center space-x-2 bg-[#1DB954] text-black px-6 py-3 rounded-full text-xs font-black hover:bg-[#1ed760] hover:scale-105 transition-all shadow-lg uppercase tracking-wide"
+                                            >
+                                                <Coffee size={16} className="stroke-[3]" />
+                                                <span>Buy us a Coffee</span>
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : songs.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-[#1DB954]/30">
                                 <p className="text-xl font-black uppercase tracking-widest opacity-50">No Playlist Loaded</p>
                             </div>

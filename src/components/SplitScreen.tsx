@@ -27,23 +27,26 @@ export function SplitScreen({ onSelectService }: Props) {
     return (
         <div className="flex w-full h-screen font-sans select-none relative">
             {/* Help Button to Recall Overlay */}
+            {/* Help Button to Recall Overlay */}
             <button
                 onClick={() => setShowOnboarding(true)}
-                className="absolute top-6 right-6 z-40 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/50 hover:text-white transition-colors"
+                className="absolute top-6 right-6 z-40 p-3 rounded-full bg-white text-black hover:scale-110 transition-transform shadow-lg"
                 title="Show Info & Instructions"
             >
-                <HelpCircle size={24} />
+                <HelpCircle size={24} className="stroke-[2.5]" />
             </button>
 
             {/* Buy Me a Coffee Button */}
+            {/* Buy Me a Coffee Button */}
             <a
-                href="https://ko-fi.com"
+                href="https://ko-fi.com/universalmusicdownloader"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="absolute top-6 right-20 z-40 p-2 rounded-full bg-[#FF5E5B]/10 hover:bg-[#FF5E5B]/20 text-[#FF5E5B] hover:text-[#FF5E5B]/80 transition-colors border border-[#FF5E5B]/20"
+                className="absolute top-6 right-24 z-40 px-4 py-3 rounded-full bg-[#FF5E5B] hover:bg-[#ff4542] text-white hover:scale-105 transition-all shadow-lg font-bold flex items-center space-x-2"
                 title="Buy me a coffee"
             >
-                <Coffee size={24} />
+                <Coffee size={20} className="stroke-[2.5]" />
+                <span className="text-sm">Buy me a Coffee</span>
             </a>
 
             {/* Onboarding Overlay */}
@@ -76,20 +79,7 @@ export function SplitScreen({ onSelectService }: Props) {
                                 This application allows you to download your favorite music from Spotify, SoundCloud, and YouTube in high quality.
                             </p>
 
-                            <div className="bg-white/5 rounded-xl p-6 border border-white/10 w-full mb-8 text-left">
-                                <h3 className="text-spotify-green font-bold text-lg mb-2 flex items-center">
-                                    ⚠️ Setup Required for Spotify
-                                </h3>
-                                <p className="text-sm text-gray-300 mb-4">
-                                    To download from Spotify, you need to provide your own <strong>Client ID</strong> and <strong>Client Secret</strong>.
-                                </p>
-                                <ol className="list-decimal list-inside text-sm text-gray-400 space-y-2 mb-4 ml-2">
-                                    <li>Go to the <a href="https://developer.spotify.com/dashboard" target="_blank" className="text-white underline hover:text-spotify-green">Spotify Developer Dashboard</a>.</li>
-                                    <li>Log in and create a new App ("My Music App").</li>
-                                    <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
-                                    <li>Paste them into the settings sidebar in the Spotify View.</li>
-                                </ol>
-                            </div>
+                            {/* Spotify Setup Removed - Handled by Backend */}
 
                             <button
                                 onClick={dismissOnboarding}

@@ -43,20 +43,8 @@ export function OnboardingOverlay({ onDismiss }: Props) {
 
                     <p className="text-gray-300 mb-6 leading-relaxed">
                         Download your favorite tracks in high quality.
-                        To get started, you'll need Spotify Developer Credentials.
+                        Just paste a link and we handle the rest!
                     </p>
-
-                    <div className="bg-black/40 p-4 rounded-xl border border-white/5 mb-8 w-full">
-                        <p className="text-xs text-gray-400 font-mono mb-2">Get your keys at:</p>
-                        <a
-                            href="https://developer.spotify.com/dashboard"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-spotify-green hover:underline text-sm break-all font-bold"
-                        >
-                            https://developer.spotify.com/dashboard
-                        </a>
-                    </div>
 
                     <button
                         onClick={handleDismiss}
