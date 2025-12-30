@@ -1,12 +1,12 @@
 {
-  "name": "universal-music-downloader",
+  "name": "liberaudio",
   "private": true,
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "dist-electron/main.cjs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Wirthzig/universal-music-downloader"
+    "url": "https://github.com/Wirthzig/LiberAudio"
   },
   "author": "Alexander Wirths",
   "description": "Download Music from Spotify, SoundCloud, and YouTube",
@@ -24,7 +24,8 @@
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "youtubei.js": "^16.0.1"
+    "youtubei.js": "^16.0.1",
+    "ytmusic-api": "^5.3.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
@@ -45,12 +46,12 @@
   },
   "build": {
     "appId": "com.wirthzig.universalmusicdownloader",
-    "productName": "Universal Music Downloader",
+    "productName": "LiberAudio",
     "publish": [
       {
         "provider": "github",
         "owner": "Wirthzig",
-        "repo": "universal-music-downloader"
+        "repo": "LiberAudio"
       }
     ],
     "directories": {

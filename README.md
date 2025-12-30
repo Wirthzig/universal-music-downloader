@@ -23,7 +23,7 @@
 **The Engineering Standard for Desktop Audio Archival.**
 *A deep-dive technical showcase of modern Electron/React architecture.*
 
-[**Download for macOS (.dmg)**](https://github.com/Wirthzig/universal-music-downloader/releases/latest)
+[**Download for macOS (.dmg)**](https://github.com/Wirthzig/LiberAudio/releases/latest)
 
 </div>
 
@@ -74,13 +74,13 @@ graph TD
 
 ## ❓ Troubleshooting: "App is Damaged"?
 
-If you start the app and see **"Universal Music Downloader is damaged and can't be opened"**, this is a standard macOS warning for apps downloaded from GitHub.
+If you start the app and see **"LiberAudio is damaged and can't be opened"**, this is a standard macOS warning for apps downloaded from GitHub.
 
 **The Fix:**
 Run this command in your terminal after moving the app to your Applications folder:
 
 ```bash
-sudo xattr -cr /Applications/Universal\ Music\ Downloader.app
+sudo xattr -cr /Applications/LiberAudio.app
 ```
 
 ---
@@ -112,13 +112,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
 });
 ```
 
-### 3. The Search Algorithm
+### 3. The Search Algorithm: "Pulse-Precision"
 
-To find the *correct* audio, we use a multi-tiered filtering system.
+To guarantee the *correct* official audio (and avoid low-quality covers, remixes, or music videos with skits), we engineered a custom search pipeline:
 
-1.  **Tier 1: "Topic" Channel**: YouTube auto-generates channels for artists, suffixed with ` - Topic`. **Confidence: 100%**.
-2.  **Tier 2: Official Channel**: Matches the Uploader name exactly. **Confidence: 90%**.
-3.  **Tier 3: Fallback**: The top result.
+1.  **Source Filter (`music.youtube.com`)**: We bypass the generic YouTube search and query `music.youtube.com` directly. This native filter eliminates 99% of non-musical content (gameplay, reaction videos).
+2.  **Parallel Verification**: The system fetches metadata for the top 3 candidates **concurrently**.
+3.  **Strict Validation**:
+    *   **Tier 1 (Diamond)**: Matches an Official Artist "Topic" Channel.
+    *   **Tier 2 (Gold)**: Matches the verified Artist channel name.
+    *   **Tier 3 (Silver)**: Standard fallback (with negative keyword filtering).
+4.  **Zero-Waste Metadata**: We use `yt-dlp`'s internal data dump mode to verify track details *without* downloading a single byte of media, ensuring instant results.
 
 ### 4. Binary Management & OS Permissions
 

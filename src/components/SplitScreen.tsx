@@ -1,4 +1,4 @@
-import { Coffee, HelpCircle } from 'lucide-react';
+import { Coffee, HelpCircle, Rocket, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import MainLogo from '../assets/main-logo.png';
 import SoundcloudLogo from '../assets/soundcloud-logo.png';
@@ -7,10 +7,18 @@ import YoutubeLogo from '../assets/youtube-logo.png';
 
 interface Props {
     onSelectService: (service: 'spotify' | 'soundcloud' | 'youtube') => void;
+    serverConfig: { release?: { text: string; link?: string }, toast?: { text: string; link?: string } } | null;
 }
 
-export function SplitScreen({ onSelectService }: Props) {
+export function SplitScreen({ onSelectService, serverConfig }: Props) {
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+
+    useEffect(() => {
+        if (serverConfig?.toast) {
+            setShowToast(true);
+        }
+    }, [serverConfig]);
 
     useEffect(() => {
         const hasSeen = localStorage.getItem('has_seen_onboarding');
@@ -37,6 +45,19 @@ export function SplitScreen({ onSelectService }: Props) {
             </button>
 
             {/* Buy Me a Coffee Button */}
+            {/* Release Button (Dynamic) */}
+            {serverConfig?.release && (
+                <a
+                    href={serverConfig.release.link || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute top-6 right-64 z-40 px-5 py-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 text-white transition-all shadow-lg font-bold flex items-center space-x-2 animate-pulse"
+                >
+                    <Rocket size={20} className="stroke-[2.5]" />
+                    <span className="text-sm uppercase tracking-wide">{serverConfig.release.text}</span>
+                </a>
+            )}
+
             {/* Buy Me a Coffee Button */}
             <a
                 href="https://ko-fi.com/universalmusicdownloader"
@@ -56,7 +77,7 @@ export function SplitScreen({ onSelectService }: Props) {
                         <div className="flex flex-col items-center text-center">
                             <img src={MainLogo} alt="App Logo" className="h-32 mb-8 drop-shadow-2xl" />
 
-                            <h1 className="text-3xl font-bold text-white mb-4">Welcome to Universal Music Downloader</h1>
+                            <h1 className="text-3xl font-bold text-white mb-4">Welcome to LiberAudio</h1>
 
                             <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 mb-6">
                                 <h3 className="text-red-500 font-bold text-sm uppercase mb-1">⚠️ Legal Disclaimer</h3>
@@ -128,6 +149,41 @@ export function SplitScreen({ onSelectService }: Props) {
                     <p className="text-white/70 text-sm font-bold">Download Playlists & Tracks</p>
                 </div>
             </div>
+
+            {/* Startup Toast (Dynamic) */}
+            {serverConfig?.toast && showToast && (
+                <div className="fixed bottom-8 right-8 z-50 animate-in fade-in slide-in-from-bottom-10 duration-700">
+                    <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl relative max-w-sm">
+                        <button
+                            onClick={() => setShowToast(false)}
+                            className="absolute -top-2 -right-2 bg-white text-black rounded-full p-1 hover:bg-gray-200 transition-colors shadow-lg"
+                        >
+                            <X size={14} className="stroke-[3]" />
+                        </button>
+                        <div className="flex items-start space-x-4">
+                            <div className="bg-white/10 p-3 rounded-xl">
+                                <Rocket size={24} className="text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-bold text-lg mb-1">Update</h3>
+                                <p className="text-white/70 text-sm leading-relaxed mb-3">
+                                    {serverConfig.toast.text}
+                                </p>
+                                {serverConfig.toast.link && (
+                                    <a
+                                        href={serverConfig.toast.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-block bg-white text-black px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wide hover:scale-105 transition-transform"
+                                    >
+                                        Check it Out
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

@@ -12,6 +12,7 @@ interface Song {
     youtubeUrl?: string;
     isSelected: boolean;
     isPreviouslyDownloaded?: boolean;
+    durationMs?: number;
 }
 
 interface Props {
@@ -94,7 +95,8 @@ export function SpotifyView({ onBack }: Props) {
                     artist: item.artists.map((a: any) => a.name).join(', '),
                     status: isDownloaded ? 'exists' : 'pending',
                     isSelected: !isDownloaded,
-                    isPreviouslyDownloaded: isDownloaded
+                    isPreviouslyDownloaded: isDownloaded,
+                    durationMs: item.duration_ms
                 }];
             } else {
                 // Playlist
@@ -110,7 +112,8 @@ export function SpotifyView({ onBack }: Props) {
                             artist: item.track.artists.map((a: any) => a.name).join(', '),
                             status: (isDownloaded ? 'exists' : 'pending') as 'pending' | 'downloading' | 'downloaded' | 'error' | 'exists',
                             isSelected: !isDownloaded,
-                            isPreviouslyDownloaded: isDownloaded
+                            isPreviouslyDownloaded: isDownloaded,
+                            durationMs: item.track.duration_ms
                         };
                     });
                     allSongs = [...allSongs, ...newItems];
@@ -158,7 +161,8 @@ export function SpotifyView({ onBack }: Props) {
 
                     const url = await window.electronAPI.searchYoutube({
                         artist: newSongs[i].artist,
-                        title: newSongs[i].title
+                        title: newSongs[i].title,
+                        duration: newSongs[i].durationMs ? Math.round(newSongs[i].durationMs! / 1000) : undefined
                     });
 
                     if (!url) {

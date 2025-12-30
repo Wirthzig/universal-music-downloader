@@ -72,3 +72,21 @@ def get_spotify_token():
     except requests.exceptions.RequestException as e:
         print(f"Error fetching token: {e}")
         raise HTTPException(status_code=502, detail="Failed to communicate with Spotify")
+
+@app.get("/config")
+def get_config():
+    """
+    Returns dynamic configuration for the frontend (messages, toasts).
+    Controlled via Environment Variables on Render.
+    """
+    return {
+        "release": {
+            "text": os.environ.get("RELEASE_TEXT"),
+            "link": os.environ.get("RELEASE_LINK")
+        },
+        "toast": {
+            "text": os.environ.get("TOAST_TEXT"),
+            "link": os.environ.get("TOAST_LINK")
+        }
+    }
+

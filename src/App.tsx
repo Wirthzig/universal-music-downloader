@@ -8,12 +8,19 @@ import { YoutubeView } from './components/YoutubeView';
 function App() {
   const [view, setView] = useState<'home' | 'spotify' | 'soundcloud' | 'youtube'>('home');
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [serverConfig, setServerConfig] = useState<{ release?: { text: string; link?: string }, toast?: { text: string; link?: string } } | null>(null);
 
   useEffect(() => {
     // Init backend dependencies on mount (global)
     if (window.electronAPI) {
       window.electronAPI.initDependencies().catch(console.error);
     }
+
+    // Fetch Server Config (Background)
+    fetch('https://universal-music-downloader.onrender.com/config')
+      .then(res => res.json())
+      .then(data => setServerConfig(data))
+      .catch(e => console.error("Config fetch failed:", e));
   }, []);
 
   const handleServiceSelect = (service: 'spotify' | 'soundcloud' | 'youtube') => {
@@ -29,7 +36,7 @@ function App() {
       )}
 
       {/* 2. Routing */}
-      {view === 'home' && <SplitScreen onSelectService={handleServiceSelect} />}
+      {view === 'home' && <SplitScreen onSelectService={handleServiceSelect} serverConfig={serverConfig} />}
 
       {view === 'spotify' && <SpotifyView onBack={() => setView('home')} />}
       {view === 'soundcloud' && <SoundCloudView onBack={() => setView('home')} />}
