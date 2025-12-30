@@ -15,7 +15,7 @@ export function SplitScreen({ onSelectService, serverConfig }: Props) {
     const [showToast, setShowToast] = useState(false);
 
     useEffect(() => {
-        if (serverConfig?.toast) {
+        if (serverConfig?.toast && serverConfig.toast.text !== 'None') {
             setShowToast(true);
         }
     }, [serverConfig]);
@@ -34,41 +34,51 @@ export function SplitScreen({ onSelectService, serverConfig }: Props) {
 
     return (
         <div className="flex w-full h-screen font-sans select-none relative">
-            {/* Help Button to Recall Overlay */}
-            {/* Help Button to Recall Overlay */}
-            <button
-                onClick={() => setShowOnboarding(true)}
-                className="absolute top-6 right-6 z-40 p-3 rounded-full bg-white text-black hover:scale-110 transition-transform shadow-lg"
-                title="Show Info & Instructions"
-            >
-                <HelpCircle size={24} className="stroke-[2.5]" />
-            </button>
+            {/* Draggable Top Bar (Invisible) */}
+            <div
+                className="absolute top-0 left-0 w-full h-12 z-30"
+                style={{ WebkitAppRegion: 'drag' } as any}
+            />
 
-            {/* Buy Me a Coffee Button */}
-            {/* Release Button (Dynamic) */}
-            {serverConfig?.release && (
+            {/* Top Right Actions Container */}
+            <div
+                className="absolute top-6 right-6 z-40 flex items-center space-x-4"
+                style={{ WebkitAppRegion: 'no-drag' } as any}
+            >
+                {/* Release Button (Dynamic) */}
+                {serverConfig?.release && serverConfig.release.text !== 'None' && (
+                    <a
+                        href={serverConfig.release.link || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-lg font-bold flex items-center space-x-2"
+                    >
+                        <Rocket size={20} className="stroke-[2.5]" />
+                        <span className="text-sm uppercase tracking-wide">{serverConfig.release.text}</span>
+                    </a>
+                )}
+
+                {/* Buy Me a Coffee Button */}
                 <a
-                    href={serverConfig.release.link || '#'}
+                    href="https://ko-fi.com/liberaudio"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="absolute top-6 right-64 z-40 px-5 py-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 text-white transition-all shadow-lg font-bold flex items-center space-x-2 animate-pulse"
+                    className="px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-lg font-bold flex items-center space-x-2"
+                    title="Buy me a coffee"
                 >
-                    <Rocket size={20} className="stroke-[2.5]" />
-                    <span className="text-sm uppercase tracking-wide">{serverConfig.release.text}</span>
+                    <Coffee size={20} className="stroke-[2.5]" />
+                    <span className="text-sm">Buy me a Coffee</span>
                 </a>
-            )}
 
-            {/* Buy Me a Coffee Button */}
-            <a
-                href="https://ko-fi.com/universalmusicdownloader"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute top-6 right-24 z-40 px-4 py-3 rounded-full bg-[#FF5E5B] hover:bg-[#ff4542] text-white hover:scale-105 transition-all shadow-lg font-bold flex items-center space-x-2"
-                title="Buy me a coffee"
-            >
-                <Coffee size={20} className="stroke-[2.5]" />
-                <span className="text-sm">Buy me a Coffee</span>
-            </a>
+                {/* Help Button */}
+                <button
+                    onClick={() => setShowOnboarding(true)}
+                    className="p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] shadow-lg"
+                    title="Show Info & Instructions"
+                >
+                    <HelpCircle size={24} className="stroke-[2.5]" />
+                </button>
+            </div>
 
             {/* Onboarding Overlay */}
             {showOnboarding && (
@@ -151,7 +161,7 @@ export function SplitScreen({ onSelectService, serverConfig }: Props) {
             </div>
 
             {/* Startup Toast (Dynamic) */}
-            {serverConfig?.toast && showToast && (
+            {serverConfig?.toast && serverConfig.toast.text !== 'None' && showToast && (
                 <div className="fixed bottom-8 right-8 z-50 animate-in fade-in slide-in-from-bottom-10 duration-700">
                     <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl relative max-w-sm">
                         <button
@@ -161,15 +171,12 @@ export function SplitScreen({ onSelectService, serverConfig }: Props) {
                             <X size={14} className="stroke-[3]" />
                         </button>
                         <div className="flex items-start space-x-4">
-                            <div className="bg-white/10 p-3 rounded-xl">
-                                <Rocket size={24} className="text-white" />
-                            </div>
                             <div>
-                                <h3 className="text-white font-bold text-lg mb-1">Update</h3>
+                                <h3 className="text-white font-bold text-lg mb-1">Message from the Dev Team:</h3>
                                 <p className="text-white/70 text-sm leading-relaxed mb-3">
                                     {serverConfig.toast.text}
                                 </p>
-                                {serverConfig.toast.link && (
+                                {serverConfig.toast.link && serverConfig.toast.link !== 'None' && (
                                     <a
                                         href={serverConfig.toast.link}
                                         target="_blank"

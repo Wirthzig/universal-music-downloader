@@ -1,9 +1,1 @@
-"use strict";
-const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("electronAPI", {
-  initDependencies: () => electron.ipcRenderer.invoke("init-dependencies"),
-  selectFolder: () => electron.ipcRenderer.invoke("select-folder"),
-  searchYoutube: (query) => electron.ipcRenderer.invoke("search-youtube", query),
-  fetchMetadata: (url) => electron.ipcRenderer.invoke("fetch-metadata", url),
-  downloadSong: (data) => electron.ipcRenderer.invoke("download-song", data)
-});
+"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("electronAPI",{initDependencies:()=>e.ipcRenderer.invoke("init-dependencies"),selectFolder:()=>e.ipcRenderer.invoke("select-folder"),searchYoutube:n=>e.ipcRenderer.invoke("search-youtube",n),fetchMetadata:n=>e.ipcRenderer.invoke("fetch-metadata",n),downloadSong:n=>e.ipcRenderer.invoke("download-song",n)});

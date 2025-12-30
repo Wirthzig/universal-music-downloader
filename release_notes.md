@@ -72,6 +72,6 @@ This software is a **Proof of Concept** designed strictly for educational purpos
 
 ### ☕ Support Us
 If you enjoy the app, consider buying us a coffee! It helps us keep the backend servers awake and the updates coming.
-[**Buy us a Coffee on Ko-fi**](https://ko-fi.com/universalmusicdownloader)
+[**Buy us a Coffee on Ko-fi**](https://ko-fi.com/liberaudio)
 
 *Happy Downloading!* 🎵

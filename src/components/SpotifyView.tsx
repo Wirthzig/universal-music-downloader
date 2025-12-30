@@ -342,7 +342,7 @@ export function SpotifyView({ onBack }: Props) {
                                                 If you buy us a coffee, we might be able to afford a server that never sleeps! (Or at least one that naps less). ☕
                                             </p>
                                             <a
-                                                href="https://ko-fi.com/universalmusicdownloader"
+                                                href="https://ko-fi.com/liberaudio"
                                                 target="_blank"
                                                 className="inline-flex items-center space-x-2 bg-[#1DB954] text-black px-6 py-3 rounded-full text-xs font-black hover:bg-[#1ed760] hover:scale-105 transition-all shadow-lg uppercase tracking-wide"
                                             >

@@ -119,6 +119,7 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.mjs'),
             nodeIntegration: false,
             contextIsolation: true,
+            webSecurity: false // sometimes helps with local resource loading but use with caution
         },
     });
 
@@ -148,7 +149,7 @@ app.whenReady().then(async () => {
     console.log(`[Main] App Ready. Node: ${process.version}, Arch: ${process.arch}, Platform: ${process.platform}`);
     createWindow();
 
-    // Initialize YTMusic (Dynamic Import for ESM)
+    // Initialize YTMusic (Dynamic Import)
     try {
         const mod = await import('ytmusic-api');
         const YTMusicClass = mod.default || mod;
@@ -156,12 +157,9 @@ app.whenReady().then(async () => {
         await ytmusic.initialize();
         isYtMusicReady = true;
         console.log('[Main] YTMusic API Initialized 🎵');
+    } catch (e) { console.error('[Main] Failed to init YTMusic:', e); }
 
 
-
-    } catch (e) {
-        console.error('[Main] Failed to init YTMusic:', e);
-    }
 
     // Check for updates immediately
     console.log('[Main] Checking for updates...');
@@ -273,12 +271,13 @@ app.whenReady().then(async () => {
         return str
             .toLowerCase()
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+            .replace(/\s+-\s+topic/g, '') // Remove " - Topic"
             .replace(/\(official\s+video\)/g, '')
             .replace(/\(official\s+audio\)/g, '')
             .replace(/\(lyrics\)/g, '')
             .replace(/\(official\)/g, '')
-            .replace(/\[.*?\]/g, '') // remove brackets generally? Maybe [Official Video]
-            .replace(/[\(\[\{\)\]\}]/g, '') // Remove the brackets chars themselves, keep content
+            .replace(/\[.*?\]/g, '') // remove brackets generally
+            .replace(/[\(\[\{\)\]\}]/g, '') // Remove the brackets chars themselves
             .replace(/\b(feat|ft|featuring)\b.*/g, '') // remove feat
             .replace(/[^a-z0-9]/g, '') // remove ALL punctuation and spaces
             .trim();
@@ -304,6 +303,28 @@ app.whenReady().then(async () => {
         });
     };
 
+    const searchYtDlp = (query: string, prefix: string = 'ytsearch5'): Promise<any[]> => {
+        return new Promise((resolve) => {
+            const args = [
+                '--dump-single-json',
+                '--flat-playlist',
+                '--no-warnings',
+                `${prefix}:${query}`
+            ];
+            const child = spawn(YT_DLP_PATH, args);
+            let stdout = '';
+            child.stdout.on('data', d => stdout += d.toString());
+            child.on('close', () => {
+                try {
+                    const data = JSON.parse(stdout);
+                    resolve(data.entries || []);
+                } catch (e) { resolve([]); }
+            });
+        });
+    };
+
+
+
     // --- YTMusic SEARCH (Exact Implementation of User Request) ---
     ipcMain.handle('search-youtube', async (_, payload) => {
         if (!isYtMusicReady || !ytmusic) {
@@ -322,7 +343,6 @@ app.whenReady().then(async () => {
         let targetTitle = '';
 
         if (typeof payload === 'string') {
-            // Best effort parse if string
             const parts = payload.split(' - ');
             if (parts.length > 1) {
                 targetArtist = parts[0];
@@ -335,13 +355,11 @@ app.whenReady().then(async () => {
             targetTitle = payload.title || '';
         }
 
-        // 1. Normalize Input: "{artist} - {track}"
         const cleanArtist = normalizeStr(targetArtist);
         const cleanTitle = normalizeStr(targetTitle);
         const query = `${targetArtist} - ${targetTitle}`;
         const cacheKey = normalizeStr(query);
 
-        // 2. Cache Check
         if (searchCache.has(cacheKey)) {
             console.log(`[Main] Cache HIT for: "${query}"`);
             return searchCache.get(cacheKey);
@@ -349,7 +367,6 @@ app.whenReady().then(async () => {
 
         console.log(`[Main] Searching YTMusic: "${query}"`);
 
-        // 3. Rate Limit (1 search / sec)
         const now = Date.now();
         const timeSinceLast = now - lastSearchTime;
         if (timeSinceLast < 1100) {
@@ -358,35 +375,24 @@ app.whenReady().then(async () => {
         }
         lastSearchTime = Date.now();
 
-        // 4. Search & Backoff
+        // --- TIER 1: YouTube Music ---
         let retries = 0;
         const maxRetries = 2;
 
         while (retries <= maxRetries) {
             try {
                 const results = await ytmusic.search(query);
-
-                // 5. Select best resultType == "song" OR "video" and RANK them
-                // "Iterate results and ranking if they are the correct song based on duration, title and artist."
-
                 let bestMatch: any = null;
                 let highestScore = -1;
 
-                // Consider top 5 results (mixed songs and videos)
-                // ytmusic-api results have: { type: 'SONG'|'VIDEO', name: string, artist: { name: string }, duration: number|null }
-
                 for (const r of results.slice(0, 5)) {
-                    // Basic Type Filter
                     if (r.type !== 'SONG' && r.type !== 'song' && r.type !== 'VIDEO' && r.type !== 'video') continue;
 
                     const rTitle = normalizeStr(r.name || '');
                     const rArtist = normalizeStr(r.artist?.name || '');
 
-                    // Note: Duration is often null in search results, so we skip strict duration check for now.
+                    console.log(`[Tier 1] Scoring: "${r.name}" by "${r.artist?.name}"`);
 
-                    console.log(`[Main] Scoring Candidate: "${r.name}" by "${r.artist?.name}"`);
-
-                    // --- 1. NEGATIVE FILTERS ---
                     const fullTitleLower = (r.name || '').toLowerCase();
                     const targetLower = (targetTitle + ' ' + targetArtist).toLowerCase();
                     const negativeKeywords = ['cover', 'karaoke', 'instrumental', 'remix', 'live', 'concerto', 'mix'];
@@ -394,7 +400,6 @@ app.whenReady().then(async () => {
                     let rejectionReason = '';
 
                     for (const kw of negativeKeywords) {
-                        // If candidate has keyword (e.g. "remix") AND target DOES NOT -> Reject
                         if (fullTitleLower.includes(kw) && !targetLower.includes(kw)) {
                             isRejected = true;
                             rejectionReason = kw;
@@ -402,45 +407,20 @@ app.whenReady().then(async () => {
                         }
                     }
                     if (isRejected) {
-                        console.log(`[Main] -> Reject: Negative Filter ("${rejectionReason}")`);
+                        console.log(`[Tier 1] -> Reject: Negative Filter ("${rejectionReason}")`);
                         continue;
                     }
 
-                    // --- 2. SCORING ---
                     let score = 0;
+                    if (rTitle.includes(cleanTitle) || cleanTitle.includes(rTitle)) score += 3;
+                    else if (rTitle.includes(cleanTitle) && rTitle.includes(cleanArtist)) score += 3;
 
-                    // A. Title Match (Mutual Inclusion)
-                    if (rTitle.includes(cleanTitle) || cleanTitle.includes(rTitle)) {
-                        score += 3; // strong match
-                    } else {
-                        // Check for "Title - Artist" format in video title
-                        if (rTitle.includes(cleanTitle) && rTitle.includes(cleanArtist)) {
-                            score += 3;
-                        } else {
-                            console.log(`[Main] -> Low Score: Title Mismatch ("${rTitle}" vs "${cleanTitle}")`);
-                        }
-                    }
+                    if (rArtist.includes(cleanArtist) || cleanArtist.includes(rArtist)) score += 3;
+                    else if (rTitle.includes(cleanArtist)) score += 2;
 
-                    // B. Artist Match
-                    if (rArtist.includes(cleanArtist) || cleanArtist.includes(rArtist)) {
-                        score += 3;
-                    } else {
-                        // Fallback: Artist in Title?
-                        if (rTitle.includes(cleanArtist)) {
-                            score += 2; // decent match
-                        } else {
-                            console.log(`[Main] -> Low Score: Artist Mismatch ("${rArtist}" vs "${cleanArtist}")`);
-                        }
-                    }
-
-                    // C. Type Bonus
                     if (r.type === 'SONG' || r.type === 'song') score += 1;
 
-                    console.log(`[Main] -> Final Score: ${score}`);
-
-                    // Threshold: Need at least Title AND Artist match (3+2 = 5) roughly
-                    // But if title is super simplistic, might get 3+0=3.
-                    // Let's set 5 as a strong match (Title + Artist).
+                    console.log(`[Tier 1] -> Score: ${score}`);
 
                     if (score > highestScore && score >= 5) {
                         highestScore = score;
@@ -450,32 +430,136 @@ app.whenReady().then(async () => {
 
                 if (bestMatch) {
                     const url = `https://music.youtube.com/watch?v=${bestMatch.videoId}`;
-                    console.log(`[Main] 🏆 Winner: "${bestMatch.name}" (Score: ${highestScore}) -> ${url}`);
-
-                    // Cache & Return
+                    console.log(`[Tier 1] 🏆 Winner: "${bestMatch.name}" (Score: ${highestScore}) -> ${url}`);
                     searchCache.set(cacheKey, url);
                     return url;
                 }
 
-                console.log(`[Main] No verified match for "${query}" after ranking.`);
-                return null;
+                console.log(`[Tier 1] No verified match for "${query}". Falling back...`);
+                break;
 
             } catch (e: any) {
-                console.error(`[Main] Search Error (Attempt ${retries + 1}):`, e.message);
+                console.error(`[Tier 1] Error (Attempt ${retries + 1}):`, e.message);
                 if (e.message && e.message.includes('429')) {
-                    // Exponential Backoff
                     const backoff = 2000 * Math.pow(2, retries);
-                    console.log(`[Main] 429 Detected. Waiting ${backoff}ms...`);
                     await sleep(backoff);
                     retries++;
                 } else {
-                    // Non-retryable error
                     break;
                 }
             }
         }
 
-        return null;
+        // --- TIER 2: YouTubei.js (Normal YouTube) ---
+        // --- TIER 2: yt-dlp (YouTube Music Mode) ---
+        console.log(`[Main] Falling back to Tier 2: yt-dlp (YouTube Music)...`);
+        try {
+            // 'ytmsearch' searches YouTube Music specifically
+            const fallbackResults = await searchYtDlp(query, 'ytmsearch5');
+            let bestFallMatch: any = null;
+            let highestFallScore = -1;
+
+            for (const r of fallbackResults) {
+                const rTitle = normalizeStr(r.title || '');
+                const rArtist = normalizeStr(r.uploader || '');
+                console.log(`[Tier 2] Scoring: "${r.title}" by "${r.uploader}"`);
+
+                const fullTitleLower = (r.title || '').toLowerCase();
+                const targetLower = (targetTitle + ' ' + targetArtist).toLowerCase();
+                const negativeKeywords = ['cover', 'karaoke', 'instrumental', 'remix', 'live', 'concerto', 'mix'];
+                let isRejected = false;
+
+                for (const kw of negativeKeywords) {
+                    if (fullTitleLower.includes(kw) && !targetLower.includes(kw)) {
+                        isRejected = true;
+                        break;
+                    }
+                }
+                if (isRejected) {
+                    console.log(`[Tier 2] -> Reject: Negative Filter`);
+                    continue;
+                }
+
+                let score = 0;
+                if (rTitle.includes(cleanTitle) || cleanTitle.includes(rTitle)) score += 3;
+                else if (rTitle.includes(cleanTitle) && rTitle.includes(cleanArtist)) score += 3;
+
+                if (rArtist.includes(cleanArtist) || cleanArtist.includes(rArtist)) score += 3;
+                else if (rTitle.includes(cleanArtist)) score += 2;
+
+                console.log(`[Tier 2] -> Score: ${score}`);
+
+                if (score > highestFallScore && score >= 5) {
+                    highestFallScore = score;
+                    bestFallMatch = r;
+                }
+            }
+
+            if (bestFallMatch) {
+                const url = `https://youtube.com/watch?v=${bestFallMatch.id}`;
+                console.log(`[Tier 2] 🏆 Winner: "${bestFallMatch.title}" (Score: ${highestFallScore}) -> ${url}`);
+                searchCache.set(cacheKey, url);
+                return url;
+            }
+
+        } catch (e) { console.error('[Tier 2] Error:', e); }
+
+        // --- TIER 3: yt-dlp (Normal YouTube Mode) ---
+        console.log(`[Main] Falling back to Tier 3: yt-dlp (Normal YouTube)...`);
+        try {
+            // 'ytsearch' searches Standard YouTube
+            const fallbackResults = await searchYtDlp(query, 'ytsearch5');
+            let bestFallMatch: any = null;
+            let highestFallScore = -1;
+
+            for (const r of fallbackResults) {
+                const rTitle = normalizeStr(r.title || '');
+                const rArtist = normalizeStr(r.uploader || '');
+                console.log(`[Tier 3] Scoring: "${r.title}" by "${r.uploader}"`);
+
+                const fullTitleLower = (r.title || '').toLowerCase();
+                const targetLower = (targetTitle + ' ' + targetArtist).toLowerCase();
+                const negativeKeywords = ['cover', 'karaoke', 'instrumental', 'remix', 'live', 'concerto', 'mix'];
+                let isRejected = false;
+
+                for (const kw of negativeKeywords) {
+                    if (fullTitleLower.includes(kw) && !targetLower.includes(kw)) {
+                        isRejected = true;
+                        break;
+                    }
+                }
+                if (isRejected) {
+                    console.log(`[Tier 3] -> Reject: Negative Filter`);
+                    continue;
+                }
+
+                let score = 0;
+                if (rTitle.includes(cleanTitle) || cleanTitle.includes(rTitle)) score += 3;
+                else if (rTitle.includes(cleanTitle) && rTitle.includes(cleanArtist)) score += 3;
+
+                if (rArtist.includes(cleanArtist) || cleanArtist.includes(rArtist)) score += 3;
+                else if (rTitle.includes(cleanArtist)) score += 2;
+
+                console.log(`[Tier 3] -> Score: ${score}`);
+
+                if (score > highestFallScore && score >= 5) {
+                    highestFallScore = score;
+                    bestFallMatch = r;
+                }
+            }
+
+            if (bestFallMatch) {
+                const url = `https://youtube.com/watch?v=${bestFallMatch.id}`;
+                console.log(`[Tier 3] 🏆 Winner: "${bestFallMatch.title}" (Score: ${highestFallScore}) -> ${url}`);
+                searchCache.set(cacheKey, url);
+                return url;
+            }
+
+        } catch (e) {
+            console.error('[Tier 3] Error:', e);
+        }
+
+        return null; // Give up
     });
 
     ipcMain.handle('download-song', async (event, { url, folder, artist, title }) => {

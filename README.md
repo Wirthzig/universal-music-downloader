@@ -9,9 +9,9 @@
 
 ---
 
-# Universal Music Downloader
+# LiberAudio
 
-![Project Banner](src/assets/release-banner.png)
+![Project Banner](src/assets/main-logo.png)
 
 <div align="center">
 
