@@ -20,7 +20,7 @@ export default defineConfig({
               fileName: () => 'main.cjs',
             },
             rollupOptions: {
-              external: ['electron', 'ytmusic-api', ...builtinModules],
+              external: ['electron', ...builtinModules],
             },
           },
         },
